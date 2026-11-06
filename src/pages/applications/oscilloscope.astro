@@ -1,0 +1,17 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import OscilloMicro from "../../components/OscilloMicro.astro";
+---
+<Layout title="Oscilloscope micro" description="Forme d'onde et spectre en direct du son capté par le micro.">
+  <a href="/applications" class="retour muted">← Applications</a>
+  <h1>Oscilloscope micro</h1>
+  <p class="muted intro">Forme d'onde et spectre en direct du son capté par le micro.</p>
+
+  <OscilloMicro />
+
+  <style>
+    .retour { display: inline-block; margin-bottom: 1.5rem; text-decoration: none; font-size: .9rem; transition: color .2s; }
+    .retour:hover { color: var(--fg); }
+    .intro { margin: 0 0 2rem; }
+  </style>
+</Layout>

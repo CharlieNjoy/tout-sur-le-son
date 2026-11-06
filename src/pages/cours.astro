@@ -1,0 +1,139 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { matieres } from "../data/cours.js";
+---
+<Layout title="Cours">
+
+  <!-- ===== CHOIX DE LA MATIÈRE ===== -->
+  <div id="choix-matiere">
+    <h1>Apprendre</h1>
+    <p class="etape muted">Choisissez une matière</p>
+    <div class="choix">
+      {matieres.map((m) => (
+        <button class="carte matiere" data-matiere={m.id}>
+          <span class="titre">{m.nom}</span>
+          <span class="sous-titre">{m.description}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <!-- ===== SOMMAIRE ===== -->
+  <section id="cours" hidden>
+    <button id="retour" class="retour">← Changer de matière</button>
+
+    {matieres.map((m) => (
+      <div class="bloc" data-matiere={m.id} hidden>
+        <h1>{m.nom}</h1>
+        <p class="muted">{m.description}</p>
+
+        {m.chapitres.length === 0 ? (
+          <p class="vide muted">Bientôt disponible.</p>
+        ) : (
+          m.chapitres.map((ch, i) => {
+            // Uniquement les niveaux qui ont du contenu dans ce chapitre
+            const colonnes = m.niveaux.filter((nv) => ch.niveaux[nv.id]?.length);
+            return (
+              <section class="chapitre">
+                <span class="chapitre-num">Chapitre {i + 1}</span>
+                <h2>{ch.titre}</h2>
+
+                <div class="colonnes">
+                  {colonnes.map((nv) => (
+                    <div class="colonne">
+                      <p class="niveau-label">{nv.nom}</p>
+                      <ul class="lecons">
+                        {ch.niveaux[nv.id].map((c) => <li>{c}</li>)}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })
+        )}
+      </div>
+    ))}
+  </section>
+
+  <style>
+    .etape { margin: 2.5rem 0 1rem; text-transform: uppercase; letter-spacing: .1em; font-size: .8rem; }
+
+    /* ----- Cartes matières ----- */
+    .choix {
+      display: grid; gap: 1.25rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .carte {
+      font: inherit; color: var(--fg); background: none; cursor: pointer; text-align: left;
+      display: flex; flex-direction: column; gap: .4rem;
+      padding: 1.5rem; border: 1px solid var(--line); border-radius: 12px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .carte:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(0, 0, 0, .3); }
+    .carte .titre { font-size: 1.2rem; }
+    .carte .sous-titre { color: var(--muted); font-size: .95rem; line-height: 1.5; }
+
+    /* ----- Bouton retour ----- */
+    .retour {
+      font: inherit; font-size: .9rem; background: none; border: none; padding: 0;
+      margin-bottom: 2rem; color: var(--muted); cursor: pointer; transition: color .2s;
+    }
+    .retour:hover { color: var(--fg); }
+
+    /* ----- Chapitres ----- */
+    .vide { margin-top: 2rem; }
+    .chapitre { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
+    .chapitre-num { color: var(--accent); font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; }
+    .chapitre h2 { margin: .2rem 0 1.25rem; font-size: 1.5rem; }
+
+    /* ----- Colonnes par niveau ----- */
+    .colonnes {
+      display: grid; gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .colonne { padding: 1.25rem; border: 1px solid var(--line); border-radius: 12px; }
+    .niveau-label {
+      margin: 0 0 .75rem; color: var(--accent);
+      font-size: .75rem; text-transform: uppercase; letter-spacing: .1em;
+    }
+    .lecons { margin: 0; padding-left: 1.1rem; color: var(--muted); }
+    .lecons li { padding: .25rem 0; }
+  </style>
+
+  <script>
+    import gsap from "gsap";
+
+    const $ = (s) => document.querySelectorAll(s);
+    const choixMatiere = document.getElementById("choix-matiere");
+    const cours = document.getElementById("cours");
+    const retour = document.getElementById("retour");
+
+    // Animation d'apparition réutilisable
+    function apparaitre(elements, decalage = 15) {
+      gsap.fromTo(elements,
+        { y: decalage, opacity: 0 },
+        { y: 0, opacity: 1, duration: .5, stagger: .05, ease: "power2.out", overwrite: true });
+    }
+
+    // Choix de la matière → affiche son sommaire
+    $(".matiere").forEach((b) =>
+      b.addEventListener("click", () => {
+        const bloc = document.querySelector(`.bloc[data-matiere="${b.dataset.matiere}"]`);
+        $(".bloc").forEach((x) => (x.hidden = x !== bloc));
+        choixMatiere.hidden = true;
+        cours.hidden = false;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        apparaitre([retour, ...bloc.querySelectorAll("h1, h1 + p, .vide, .chapitre")], 20);
+      })
+    );
+
+    // Retour au choix de matière
+    retour.addEventListener("click", () => {
+      cours.hidden = true;
+      choixMatiere.hidden = false;
+      window.scrollTo({ top: 0 });
+      apparaitre($(".matiere"));
+    });
+  </script>
+</Layout>

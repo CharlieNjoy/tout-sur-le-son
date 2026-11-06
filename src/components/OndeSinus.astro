@@ -1,0 +1,170 @@
+---
+// Onde sinusoïdale interactive : fréquence, amplitude, et écoute (Web Audio API)
+// Fenêtre d'affichage fixe de 10 ms → le nombre de périodes visibles = f × 10 ms
+---
+<div class="onde-sinus">
+  <div class="ecran">
+    <canvas></canvas>
+    <span class="axe gauche">0 ms</span>
+    <span class="axe droite">10 ms</span>
+  </div>
+
+  <div class="reglages">
+    <label>
+      <span class="nom">Fréquence <strong class="val-f">440 Hz</strong></span>
+      <input type="range" class="curseur-f" min="0" max="1000" value="590" />
+    </label>
+    <label>
+      <span class="nom">Amplitude <strong class="val-a">70 %</strong></span>
+      <input type="range" class="curseur-a" min="0" max="100" value="70" />
+    </label>
+    <button class="ecouter">▶ Écouter</button>
+  </div>
+
+  <dl class="mesures">
+    <div><dt>Période T = 1/f</dt><dd class="val-t">2,27 ms</dd></div>
+    <div><dt>Longueur d'onde λ = c/f</dt><dd class="val-l">78 cm</dd></div>
+    <div><dt>Périodes affichées</dt><dd class="val-p">4,4</dd></div>
+  </dl>
+  <p class="note muted">c = 343 m/s (air à 20 °C). Baissez le volume avant d'écouter.</p>
+</div>
+
+<style>
+  .onde-sinus { display: grid; gap: 1.25rem; }
+
+  .ecran { position: relative; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 260px; }
+  .axe { position: absolute; bottom: .5rem; font-size: .75rem; color: var(--muted); }
+  .gauche { left: .75rem; }
+  .droite { right: .75rem; }
+
+  .reglages { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr auto; align-items: end; }
+  @media (max-width: 640px) { .reglages { grid-template-columns: 1fr; } }
+  label { display: grid; gap: .4rem; }
+  .nom { font-size: .9rem; color: var(--muted); }
+  .nom strong { color: var(--fg); font-weight: 500; margin-left: .25rem; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+  .ecouter {
+    font: inherit; cursor: pointer; padding: .7rem 1.4rem; border-radius: 999px;
+    border: 1px solid var(--accent); background: none; color: var(--accent);
+    transition: background .2s;
+  }
+  .ecouter:hover, .ecouter.actif { background: rgba(110, 231, 255, .12); }
+
+  .mesures { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin: 0; }
+  .mesures div { padding: 1rem; border: 1px solid var(--line); border-radius: 12px; }
+  dt { font-size: .85rem; color: var(--muted); }
+  dd { margin: .25rem 0 0; font-size: 1.4rem; font-weight: 300; color: var(--accent); }
+  .note { margin: 0; font-size: .85rem; }
+</style>
+
+<script>
+  const C = 343;                       // célérité du son dans l'air (m/s)
+  const FENETRE = 0.010;               // durée affichée : 10 ms
+  const F_MIN = 50, F_MAX = 2000;      // plage de fréquences (Hz)
+  const VOLUME_MAX = 0.2;              // limite le volume pour protéger les oreilles
+
+  const fmt = (x, d = 0) => x.toLocaleString("fr-FR", { maximumFractionDigits: d });
+
+  document.querySelectorAll(".onde-sinus").forEach((racine) => {
+    const canvas = racine.querySelector("canvas");
+    const ctx = canvas.getContext("2d");
+    const curseurF = racine.querySelector(".curseur-f");
+    const curseurA = racine.querySelector(".curseur-a");
+    const bouton = racine.querySelector(".ecouter");
+    const champ = (c) => racine.querySelector(c);
+
+    const styles = getComputedStyle(document.documentElement);
+    const ACCENT = styles.getPropertyValue("--accent").trim();
+    const LIGNE = styles.getPropertyValue("--line").trim();
+
+    let f = 440, a = 0.7, phase = 0;
+    let audio = null;   // { ctx, osc, gain } une fois le son lancé
+
+    // Curseur 0–1000 → fréquence sur échelle logarithmique (comme l'oreille)
+    const lireFrequence = () => F_MIN * Math.pow(F_MAX / F_MIN, curseurF.value / 1000);
+
+    function majValeurs() {
+      f = lireFrequence();
+      a = curseurA.value / 100;
+      champ(".val-f").textContent = `${fmt(f)} Hz`;
+      champ(".val-a").textContent = `${curseurA.value} %`;
+      champ(".val-t").textContent = `${fmt(1000 / f, 2)} ms`;
+      const lambda = C / f;
+      champ(".val-l").textContent = lambda >= 1 ? `${fmt(lambda, 2)} m` : `${fmt(lambda * 100)} cm`;
+      champ(".val-p").textContent = fmt(f * FENETRE, 1);
+
+      if (audio) {
+        const t = audio.ctx.currentTime;
+        audio.osc.frequency.setTargetAtTime(f, t, 0.02);   // transition douce, sans clic
+        audio.gain.gain.setTargetAtTime(a * VOLUME_MAX, t, 0.02);
+      }
+    }
+
+    // Adapte le canvas à sa taille réelle et à la densité de l'écran
+    function redimensionner() {
+      const r = canvas.getBoundingClientRect();
+      canvas.width = r.width * devicePixelRatio;
+      canvas.height = r.height * devicePixelRatio;
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+    new ResizeObserver(redimensionner).observe(canvas);
+
+    function dessiner() {
+      const w = canvas.clientWidth, h = canvas.clientHeight, milieu = h / 2;
+      ctx.clearRect(0, 0, w, h);
+
+      // Axe central
+      ctx.strokeStyle = LIGNE;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, milieu); ctx.lineTo(w, milieu); ctx.stroke();
+
+      // Sinusoïde : y = A · sin(2π f t + φ), t de 0 à 10 ms
+      ctx.strokeStyle = ACCENT;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = 0; x <= w; x++) {
+        const t = (x / w) * FENETRE;
+        const y = milieu - a * (h * 0.42) * Math.sin(2 * Math.PI * f * t + phase);
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      phase -= 0.04;   // défilement lent (ralenti visuel, pas la vraie vitesse)
+      requestAnimationFrame(dessiner);
+    }
+
+    // Lancer / arrêter le son
+    bouton.addEventListener("click", () => {
+      if (audio) {
+        const t = audio.ctx.currentTime;
+        audio.gain.gain.setTargetAtTime(0, t, 0.02);
+        const fini = audio;
+        setTimeout(() => fini.ctx.close(), 150);
+        audio = null;
+        bouton.textContent = "▶ Écouter";
+        bouton.classList.remove("actif");
+        return;
+      }
+      const ac = new AudioContext();
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = "sine";
+      osc.frequency.value = f;
+      gain.gain.value = 0;
+      osc.connect(gain).connect(ac.destination);
+      osc.start();
+      audio = { ctx: ac, osc, gain };
+      majValeurs();
+      bouton.textContent = "■ Arrêter";
+      bouton.classList.add("actif");
+    });
+
+    curseurF.addEventListener("input", majValeurs);
+    curseurA.addEventListener("input", majValeurs);
+
+    majValeurs();
+    requestAnimationFrame(dessiner);
+  });
+</script>

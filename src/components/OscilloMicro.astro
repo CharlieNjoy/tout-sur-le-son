@@ -1,0 +1,227 @@
+---
+// =====================================================================
+//  OSCILLOSCOPE + ANALYSEUR DE SPECTRE SUR LE MICRO
+//  Rien n'est enregistré ni envoyé : tout est calculé dans le navigateur.
+// =====================================================================
+import "../styles/applis.css";
+---
+<div class="appli oscillo-micro">
+
+  <div class="reglages haut">
+    <button class="bouton-son micro">🎙 Activer le micro</button>
+    <button class="puce figer" disabled>Figer</button>
+    <div>
+      <p class="groupe-titre">Fenêtre de l'oscilloscope</p>
+      <div class="puces fenetres">
+        <button class="puce" data-ms="5">5 ms</button>
+        <button class="puce actif" data-ms="20">20 ms</button>
+        <button class="puce" data-ms="50">50 ms</button>
+        <button class="puce" data-ms="100">100 ms</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ecran">
+    <p class="ecran-titre">Oscilloscope (déclenchement sur front montant)</p>
+    <canvas class="oscillo"></canvas>
+    <span class="axe gauche">0</span>
+    <span class="axe droite val-fenetre">20 ms</span>
+  </div>
+
+  <div class="ecran">
+    <p class="ecran-titre">Spectre en direct (dB FS, non calibré)</p>
+    <canvas class="spectre"></canvas>
+  </div>
+
+  <dl class="mesures">
+    <div><dt>Fréquence dominante</dt><dd class="val-fd">—</dd></div>
+    <div><dt>Note la plus proche</dt><dd class="val-note">—</dd></div>
+    <div><dt>Niveau efficace</dt><dd class="val-rms">—</dd></div>
+    <div><dt>Crête</dt><dd class="val-crete">—</dd></div>
+  </dl>
+
+  <p class="note">
+    Les niveaux sont en dB FS (0 dB = pleine échelle numérique) : ce ne sont pas des dB SPL,
+    le micro n'étant pas étalonné. Les traitements automatiques du navigateur (réduction de bruit,
+    contrôle de gain) sont désactivés quand c'est possible, pour mesurer le signal brut.
+    Rien n'est enregistré ni envoyé.
+  </p>
+</div>
+
+<style>
+  .haut { grid-template-columns: auto auto 1fr; align-items: center; }
+  @media (max-width: 640px) { .haut { grid-template-columns: 1fr; } }
+  .figer:disabled { opacity: .4; cursor: default; }
+  .spectre { height: 220px; }
+</style>
+
+<script>
+  import { fmt, couleurs, preparerCanvas, grilleSpectre } from "../scripts/outils.js";
+
+  const NOTES = ["do", "do♯", "ré", "ré♯", "mi", "fa", "fa♯", "sol", "sol♯", "la", "la♯", "si"];
+  // Note tempérée la plus proche (notation française : la3 = 440 Hz) et écart en cents
+  function note(f) {
+    const n = 12 * Math.log2(f / 440) + 57;           // 57 = la3 compté depuis do0
+    const r = Math.round(n);
+    return { nom: `${NOTES[((r % 12) + 12) % 12]}${Math.floor(r / 12) - 1}`, cents: Math.round((n - r) * 100) };
+  }
+
+  document.querySelectorAll(".oscillo-micro").forEach((racine) => {
+    const $ = (s) => racine.querySelector(s);
+    const coul = couleurs();
+    const oscillo = $(".oscillo"), spectre = $(".spectre");
+    const ctxO = preparerCanvas(oscillo, () => dessiner());
+    const ctxS = preparerCanvas(spectre, () => dessiner());
+
+    const etat = { fenetre: 0.020, fige: false };
+    let audio = null;   // { ac, flux, analyseur, temps, freq }
+
+    // ----- Micro -----
+    $(".micro").addEventListener("click", async () => {
+      if (audio) {
+        audio.flux.getTracks().forEach((t) => t.stop());
+        audio.ac.close();
+        audio = null;
+        $(".micro").textContent = "🎙 Activer le micro";
+        $(".micro").classList.remove("actif");
+        $(".figer").disabled = true;
+        return;
+      }
+      try {
+        const flux = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+        });
+        const ac = new AudioContext();
+        const analyseur = ac.createAnalyser();
+        analyseur.fftSize = 16384;                 // ≈ 0,34 s à 48 kHz
+        analyseur.smoothingTimeConstant = 0.6;
+        ac.createMediaStreamSource(flux).connect(analyseur);   // pas de sortie HP → pas de larsen
+        audio = {
+          ac, flux, analyseur,
+          temps: new Float32Array(analyseur.fftSize),
+          freq: new Float32Array(analyseur.frequencyBinCount),
+        };
+        etat.fige = false;
+        $(".figer").disabled = false;
+        $(".figer").classList.remove("actif");
+        $(".micro").textContent = "■ Couper le micro";
+        $(".micro").classList.add("actif");
+        requestAnimationFrame(boucle);
+      } catch (e) {
+        $(".note").textContent = "Accès au micro refusé ou impossible : autorisez le micro dans le navigateur, puis réessayez.";
+      }
+    });
+
+    $(".figer").addEventListener("click", () => {
+      etat.fige = !etat.fige;
+      $(".figer").classList.toggle("actif", etat.fige);
+      $(".figer").textContent = etat.fige ? "Reprendre" : "Figer";
+    });
+
+    racine.querySelectorAll("[data-ms]").forEach((b) =>
+      b.addEventListener("click", () => {
+        racine.querySelectorAll("[data-ms]").forEach((x) => x.classList.toggle("actif", x === b));
+        etat.fenetre = b.dataset.ms / 1000;
+        $(".val-fenetre").textContent = `${b.dataset.ms} ms`;
+        dessiner();
+      })
+    );
+
+    function boucle() {
+      if (!audio) return;
+      if (!etat.fige) {
+        audio.analyseur.getFloatTimeDomainData(audio.temps);
+        audio.analyseur.getFloatFrequencyData(audio.freq);
+        mesurer();
+      }
+      dessiner();
+      requestAnimationFrame(boucle);
+    }
+
+    // ----- Mesures -----
+    function mesurer() {
+      const { temps, freq, ac, analyseur } = audio;
+      let somme = 0, crete = 0;
+      for (const v of temps) { somme += v * v; crete = Math.max(crete, Math.abs(v)); }
+      const dB = (x) => (x > 0 ? 20 * Math.log10(x) : -Infinity);
+      $(".val-rms").textContent = `${fmt(dB(Math.sqrt(somme / temps.length)), 1)} dB FS`;
+      $(".val-crete").textContent = `${fmt(dB(crete), 1)} dB FS`;
+
+      // Pic du spectre entre 30 Hz et 10 kHz, affiné par interpolation parabolique
+      const df = ac.sampleRate / analyseur.fftSize;
+      let iMax = -1, vMax = -Infinity;
+      for (let i = Math.ceil(30 / df); i < Math.min(freq.length - 1, 10000 / df); i++) {
+        if (freq[i] > vMax) { vMax = freq[i]; iMax = i; }
+      }
+      if (vMax < -75 || iMax < 1) {
+        $(".val-fd").textContent = "—";
+        $(".val-note").textContent = "—";
+        return;
+      }
+      const [a, b, c] = [freq[iMax - 1], freq[iMax], freq[iMax + 1]];
+      const f = (iMax + (0.5 * (a - c)) / (a - 2 * b + c)) * df;
+      const n = note(f);
+      $(".val-fd").textContent = `${fmt(f, 1)} Hz`;
+      $(".val-note").textContent = `${n.nom} ${n.cents >= 0 ? "+" : "−"}${Math.abs(n.cents)} c`;
+    }
+
+    // ----- Dessin -----
+    function dessiner() {
+      // Oscilloscope
+      let w = oscillo.clientWidth, h = oscillo.clientHeight;
+      const mil = h / 2 + 8;
+      ctxO.clearRect(0, 0, w, h);
+      ctxO.strokeStyle = coul.ligne; ctxO.lineWidth = 1;
+      ctxO.beginPath(); ctxO.moveTo(0, mil); ctxO.lineTo(w, mil); ctxO.stroke();
+
+      if (audio) {
+        const { temps, ac } = audio;
+        const nb = Math.round(etat.fenetre * ac.sampleRate);
+        // Déclenchement : passage par zéro montant le plus récent qui laisse une fenêtre complète
+        // (avec hystérésis contre le bruit). Sans déclenchement : les échantillons les plus récents.
+        let debut = temps.length - 1 - nb;
+        for (let i = temps.length - 1 - nb; i > 0; i--) {
+          if (temps[i - 1] < 0 && temps[i] >= 0) {
+            let ok = false;
+            for (let j = i; j < Math.min(i + 64, temps.length); j++) if (temps[j] > 0.01) { ok = true; break; }
+            if (ok) { debut = i; break; }
+          }
+        }
+        // Échelle automatique sur la crête affichée (minimum ±0,05 pour ne pas amplifier le bruit de fond)
+        let crete = 0.05;
+        for (let i = 0; i < nb; i++) crete = Math.max(crete, Math.abs(temps[debut + i]));
+        ctxO.strokeStyle = coul.accent; ctxO.lineWidth = 2; ctxO.lineJoin = "round";
+        ctxO.beginPath();
+        const pas = Math.max(1, Math.floor(nb / (w * 2)));
+        for (let i = 0; i <= nb; i += pas) {
+          const x = (i / nb) * w, y = mil - (temps[debut + i] / crete) * h * 0.38;
+          i ? ctxO.lineTo(x, y) : ctxO.moveTo(x, y);
+        }
+        ctxO.stroke();
+      } else {
+        ctxO.fillStyle = coul.gris; ctxO.font = "13px system-ui"; ctxO.textAlign = "center";
+        ctxO.fillText("Activez le micro pour commencer", w / 2, mil - 12);
+      }
+
+      // Spectre
+      w = spectre.clientWidth; h = spectre.clientHeight;
+      ctxS.clearRect(0, 0, w, h);
+      const yDB = grilleSpectre(ctxS, { w, h, haut: 44, bas: h - 22, dBmax: 0, dBmin: -120, pasDB: 20, unite: "dB", coul });
+      if (!audio) return;
+      const { freq, ac, analyseur } = audio;
+      const df = ac.sampleRate / analyseur.fftSize;
+      ctxS.strokeStyle = coul.accent; ctxS.lineWidth = 1.5;
+      ctxS.beginPath();
+      for (let x = 0; x < w; x++) {
+        const fa = 20 * Math.pow(1000, x / w), fb = 20 * Math.pow(1000, (x + 1) / w);
+        let max = -Infinity;
+        for (let i = Math.floor(fa / df); i <= Math.ceil(fb / df) && i < freq.length; i++) max = Math.max(max, freq[i]);
+        const y = yDB(Number.isFinite(max) ? max : -120);
+        x ? ctxS.lineTo(x, y) : ctxS.moveTo(x, y);
+      }
+      ctxS.stroke();
+    }
+
+    dessiner();
+  });
+</script>

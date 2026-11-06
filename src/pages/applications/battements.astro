@@ -1,0 +1,17 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Battements from "../../components/Battements.astro";
+---
+<Layout title="Battements" description="Deux sons de fréquences proches : l'enveloppe qui pulse, et ce qu'on entend.">
+  <a href="/applications" class="retour muted">← Applications</a>
+  <h1>Battements</h1>
+  <p class="muted intro">Deux sons de fréquences proches : l'enveloppe qui pulse, et ce qu'on entend.</p>
+
+  <Battements />
+
+  <style>
+    .retour { display: inline-block; margin-bottom: 1.5rem; text-decoration: none; font-size: .9rem; transition: color .2s; }
+    .retour:hover { color: var(--fg); }
+    .intro { margin: 0 0 2rem; }
+  </style>
+</Layout>

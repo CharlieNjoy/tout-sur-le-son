@@ -1,0 +1,182 @@
+---
+// =====================================================================
+//  BATTEMENTS : somme de deux sinus de fréquences proches
+//  sin(2πf₁t) + sin(2πf₂t) = 2·cos(π(f₂−f₁)t) · sin(π(f₁+f₂)t)
+//  → enveloppe qui varie à la fréquence de battement |f₂ − f₁|
+// =====================================================================
+import "../styles/applis.css";
+---
+<div class="appli battements">
+
+  <!-- Zoom : les deux sinus et leur somme sur quelques ms -->
+  <div class="ecran">
+    <p class="ecran-titre">Zoom : f₁, f₂ et leur somme</p>
+    <canvas class="zoom"></canvas>
+    <span class="axe gauche">0</span>
+    <span class="axe droite val-zoom">10 ms</span>
+  </div>
+
+  <!-- Vue longue : l'enveloppe apparaît -->
+  <div class="ecran">
+    <p class="ecran-titre">Somme sur une durée longue : l'enveloppe des battements</p>
+    <canvas class="long"></canvas>
+    <span class="axe gauche">0</span>
+    <span class="axe droite val-duree">1 s</span>
+  </div>
+
+  <div class="reglages">
+    <label>
+      <span class="nom">f₁ <strong class="val-f1">440 Hz</strong></span>
+      <input type="range" class="curseur-f1" min="0" max="1000" value="500" />
+    </label>
+    <label>
+      <span class="nom">Écart f₂ − f₁ <strong class="val-df">3 Hz</strong></span>
+      <input type="range" class="curseur-df" min="0" max="400" value="30" />
+    </label>
+    <label>
+      <span class="nom">Volume <strong class="val-a">70 %</strong></span>
+      <input type="range" class="curseur-a" min="0" max="100" value="70" />
+    </label>
+    <button class="bouton-son">▶ Écouter</button>
+  </div>
+
+  <dl class="mesures"></dl>
+  <p class="note">
+    Jusqu'à environ 15 Hz d'écart, on entend un seul son dont le volume pulse : ce sont les battements
+    (c'est ainsi qu'on accorde deux instruments à l'oreille). Au-delà, la sensation devient une rugosité,
+    puis on finit par distinguer deux sons séparés lorsque l'écart dépasse la bande critique. Baissez le volume avant d'écouter.
+  </p>
+</div>
+
+<style>
+  .ecran .long { height: 180px; }
+</style>
+
+<script>
+  import { fmt, couleurs, logVers, preparerCanvas, boutonSon } from "../scripts/outils.js";
+
+  const F_MIN = 100, F_MAX = 1000;
+  const ZOOM = 0.010;   // fenêtre du zoom : 10 ms
+
+  document.querySelectorAll(".battements").forEach((racine) => {
+    const $ = (s) => racine.querySelector(s);
+    const coul = couleurs();
+    const zoom = $(".zoom"), long = $(".long");
+    const ctxZ = preparerCanvas(zoom, () => dessiner());
+    const ctxL = preparerCanvas(long, () => dessiner());
+
+    const etat = { f1: 440, df: 3, a: 0.7 };
+    const f2 = () => etat.f1 + etat.df;
+    // Durée affichée : environ 2 battements, entre 0,1 s et 4 s
+    const duree = () => (etat.df > 0 ? Math.min(4, Math.max(0.1, 2 / etat.df)) : 1);
+
+    function tracer(ctx, w, mil, amp, fn, nb, couleur, largeur) {
+      ctx.strokeStyle = couleur; ctx.lineWidth = largeur;
+      ctx.beginPath();
+      for (let i = 0; i <= nb; i++) {
+        const x = (i / nb) * w, y = mil - amp * fn(i / nb);
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    function dessiner(tLecture = null) {
+      // ----- Zoom -----
+      let w = zoom.clientWidth, h = zoom.clientHeight;
+      ctxZ.clearRect(0, 0, w, h);
+      const mil1 = h * 0.32, mil2 = h * 0.72;
+      ctxZ.strokeStyle = coul.ligne; ctxZ.lineWidth = 1;
+      for (const m of [mil1, mil2]) { ctxZ.beginPath(); ctxZ.moveTo(0, m); ctxZ.lineTo(w, m); ctxZ.stroke(); }
+      const s = (f) => (u) => Math.sin(2 * Math.PI * f * u * ZOOM);
+      tracer(ctxZ, w, mil1, h * 0.12, s(etat.f1), w, coul.accent, 1.5);
+      tracer(ctxZ, w, mil1, h * 0.12, s(f2()), w, "rgba(242,242,242,.6)", 1.5);
+      tracer(ctxZ, w, mil2, h * 0.1, (u) => s(etat.f1)(u) + s(f2())(u), w, coul.accent, 2);
+      ctxZ.fillStyle = coul.gris; ctxZ.font = "11px system-ui"; ctxZ.textAlign = "right";
+      ctxZ.fillText("f₁ (bleu) et f₂ (blanc)", w - 8, mil1 - h * 0.15);
+      ctxZ.fillText("somme", w - 8, mil2 - h * 0.13);
+
+      // ----- Vue longue : min/max par colonne de pixels + enveloppe théorique -----
+      w = long.clientWidth; h = long.clientHeight;
+      const mil = h / 2 + 8, amp = h * 0.18, D = duree();
+      ctxL.clearRect(0, 0, w, h);
+      ctxL.fillStyle = coul.accent;
+      const pas = 48;   // échantillons calculés par colonne
+      for (let x = 0; x < w; x++) {
+        let mn = Infinity, mx = -Infinity;
+        for (let j = 0; j < pas; j++) {
+          const t = ((x + j / pas) / w) * D;
+          const v = Math.sin(2 * Math.PI * etat.f1 * t) + Math.sin(2 * Math.PI * f2() * t);
+          mn = Math.min(mn, v); mx = Math.max(mx, v);
+        }
+        ctxL.fillRect(x, mil - mx * amp, 1, Math.max(1, (mx - mn) * amp));
+      }
+      // Enveloppe ±2|cos(π Δf t)|
+      ctxL.setLineDash([4, 4]);
+      for (const signe of [1, -1]) {
+        tracer(ctxL, w, mil, amp, (u) => signe * 2 * Math.abs(Math.cos(Math.PI * etat.df * u * D)), w, "rgba(242,242,242,.7)", 1);
+      }
+      ctxL.setLineDash([]);
+      // Tête de lecture pendant l'écoute
+      if (tLecture !== null) {
+        const x = ((tLecture % D) / D) * w;
+        ctxL.strokeStyle = coul.texte; ctxL.lineWidth = 1;
+        ctxL.beginPath(); ctxL.moveTo(x, 24); ctxL.lineTo(x, h - 4); ctxL.stroke();
+      }
+    }
+
+    // ----- Audio : deux oscillateurs sinus -----
+    const son = boutonSon($(".bouton-son"), {
+      volume: () => etat.a,
+      demarrer: (ac, sortie) => {
+        const mix = ac.createGain();
+        mix.gain.value = 0.5;   // deux sons additionnés → on divise par deux
+        mix.connect(sortie);
+        const o1 = ac.createOscillator(), o2 = ac.createOscillator();
+        o1.frequency.value = etat.f1; o2.frequency.value = f2();
+        o1.connect(mix); o2.connect(mix);
+        const t0 = ac.currentTime + 0.05;
+        o1.start(t0); o2.start(t0);   // départ simultané → en phase à t = 0, comme le dessin
+        requestAnimationFrame(animer);
+        return { o1, o2, t0 };
+      },
+      arreter: () => dessiner(),
+    });
+
+    function animer() {
+      const s = son.actif();
+      if (!s) return;
+      dessiner(Math.max(0, s.ac.currentTime - s.t0));
+      requestAnimationFrame(animer);
+    }
+
+    function maj() {
+      etat.f1 = logVers($(".curseur-f1").value, F_MIN, F_MAX);
+      etat.df = $(".curseur-df").value / 10;
+      etat.a = $(".curseur-a").value / 100;
+      $(".val-f1").textContent = `${fmt(etat.f1)} Hz`;
+      $(".val-df").textContent = `${fmt(etat.df, 1)} Hz`;
+      $(".val-a").textContent = `${$(".curseur-a").value} %`;
+      $(".val-duree").textContent = duree() >= 1 ? `${fmt(duree(), 1)} s` : `${fmt(duree() * 1000)} ms`;
+
+      const mesures = [
+        ["f₂", `${fmt(f2(), 1)} Hz`],
+        ["Fréquence de battement |f₂ − f₁|", `${fmt(etat.df, 1)} Hz`],
+        ["Période de battement", etat.df > 0 ? `${fmt(1 / etat.df, 2)} s` : "∞"],
+        ["Fréquence perçue (f₁ + f₂)/2", `${fmt((etat.f1 + f2()) / 2, 1)} Hz`],
+      ];
+      $(".mesures").innerHTML = mesures.map(([dt, dd]) => `<div><dt>${dt}</dt><dd>${dd}</dd></div>`).join("");
+
+      const s = son.actif();
+      if (s) {
+        s.o1.frequency.setTargetAtTime(etat.f1, s.ac.currentTime, 0.02);
+        s.o2.frequency.setTargetAtTime(f2(), s.ac.currentTime, 0.02);
+        son.volume(etat.a);
+      } else {
+        dessiner();
+      }
+    }
+
+    racine.querySelectorAll("input").forEach((c) => c.addEventListener("input", maj));
+    maj();
+  });
+</script>

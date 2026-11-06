@@ -1,0 +1,17 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import SyntheseAdditive from "../../components/SyntheseAdditive.astro";
+---
+<Layout title="Synthèse additive" description="Construisez un son harmonique par harmonique et écoutez le timbre changer.">
+  <a href="/applications" class="retour muted">← Applications</a>
+  <h1>Synthèse additive</h1>
+  <p class="muted intro">Construisez un son harmonique par harmonique et écoutez le timbre changer.</p>
+
+  <SyntheseAdditive />
+
+  <style>
+    .retour { display: inline-block; margin-bottom: 1.5rem; text-decoration: none; font-size: .9rem; transition: color .2s; }
+    .retour:hover { color: var(--fg); }
+    .intro { margin: 0 0 2rem; }
+  </style>
+</Layout>

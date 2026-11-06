@@ -1,0 +1,23 @@
+---
+import "../styles/global.css";
+// Noms de fichiers en minuscules : la casse doit correspondre exactement
+// (Windows l'ignore, mais l'hébergeur sous Linux non).
+import Header from "../components/header.astro";
+import Footer from "../components/footer.astro";
+
+const { title, description = "Tout sur le son" } = Astro.props;
+---
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>{title} | Tout sur le son</title>
+  <meta name="description" content={description} />
+</head>
+<body>
+  <Header />
+  <main><slot /></main>
+  <Footer />
+</body>
+</html>

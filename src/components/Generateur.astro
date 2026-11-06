@@ -1,0 +1,572 @@
+---
+// =====================================================================
+//  GÉNÉRATEUR DE SIGNAUX ET DE BRUITS
+//  - Signaux périodiques : forme d'onde + spectre de raies (série de Fourier)
+//  - Bruits colorés : forme d'onde + densité spectrale théorique
+//  - Écoute via la Web Audio API
+// =====================================================================
+
+const signaux = [
+  { id: "sinus", nom: "Sinus" },
+  { id: "carre", nom: "Carré" },
+  { id: "triangle", nom: "Triangle" },
+  { id: "scie", nom: "Dent de scie" },
+  { id: "impulsion", nom: "Impulsions" },
+  { id: "simple", nom: "Sinus redressé simple" },
+  { id: "double", nom: "Sinus redressé double" },
+];
+
+const bruits = [
+  { id: "blanc", nom: "Blanc", couleur: "#f2f2f2" },
+  { id: "rose", nom: "Rose", couleur: "#ff9ec7" },
+  { id: "rouge", nom: "Rouge (brun)", couleur: "#ff6b5a" },
+  { id: "bleu", nom: "Bleu", couleur: "#5aa9ff" },
+  { id: "violet", nom: "Violet", couleur: "#b48cff" },
+  { id: "vert", nom: "Vert", couleur: "#6fdc8c" },
+  { id: "gris", nom: "Gris", couleur: "#9a9aa2" },
+];
+---
+<div class="generateur">
+
+  <!-- Choix du signal -->
+  <div class="groupes">
+    <div>
+      <p class="groupe-titre">Signaux périodiques</p>
+      <div class="puces">
+        {signaux.map((s, i) => (
+          <button class={i === 0 ? "puce actif" : "puce"} data-type={s.id}>{s.nom}</button>
+        ))}
+      </div>
+    </div>
+    <div>
+      <p class="groupe-titre">Bruits colorés</p>
+      <div class="puces">
+        {bruits.map((b) => (
+          <button class="puce" data-type={b.id} style={`--pastille:${b.couleur}`}>
+            <span class="pastille"></span>{b.nom}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <!-- Oscilloscope -->
+  <div class="ecran">
+    <p class="ecran-titre">Forme d'onde</p>
+    <canvas class="oscillo"></canvas>
+    <span class="axe gauche">0 ms</span>
+    <span class="axe droite">10 ms</span>
+  </div>
+
+  <!-- Spectre -->
+  <div class="ecran">
+    <p class="ecran-titre spectre-titre">Spectre théorique</p>
+    <canvas class="spectre"></canvas>
+  </div>
+
+  <!-- Réglages -->
+  <div class="reglages">
+    <label class="regl-f">
+      <span class="nom">Fréquence <strong class="val-f">440 Hz</strong></span>
+      <input type="range" class="curseur-f" min="0" max="1000" value="590" />
+    </label>
+    <label class="regl-d" hidden>
+      <span class="nom">Rapport cyclique <strong class="val-d">20 %</strong></span>
+      <input type="range" class="curseur-d" min="5" max="95" value="20" />
+    </label>
+    <label>
+      <span class="nom">Amplitude <strong class="val-a">70 %</strong></span>
+      <input type="range" class="curseur-a" min="0" max="100" value="70" />
+    </label>
+    <button class="ecouter">▶ Écouter</button>
+  </div>
+
+  <!-- Mesures -->
+  <dl class="mesures"></dl>
+  <p class="note muted"></p>
+</div>
+
+<style>
+  .generateur { display: grid; gap: 1.25rem; }
+
+  /* ----- Choix du signal ----- */
+  .groupes { display: grid; gap: 1rem; }
+  .groupe-titre { margin: 0 0 .5rem; font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+  .puces { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .puce {
+    font: inherit; font-size: .9rem; cursor: pointer;
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .45rem .95rem; border-radius: 999px;
+    border: 1px solid var(--line); background: none; color: var(--muted);
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .puce:hover { border-color: var(--accent); color: var(--fg); }
+  .puce.actif { border-color: var(--accent); color: var(--accent); background: rgba(110, 231, 255, .08); }
+  .pastille { width: .6rem; height: .6rem; border-radius: 50%; background: var(--pastille); }
+
+  /* ----- Écrans ----- */
+  .ecran { position: relative; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .ecran-titre { position: absolute; top: .5rem; left: .75rem; margin: 0; font-size: .75rem; color: var(--muted); }
+  .oscillo { display: block; width: 100%; height: 240px; }
+  .spectre { display: block; width: 100%; height: 200px; }
+  .axe { position: absolute; bottom: .5rem; font-size: .75rem; color: var(--muted); }
+  .gauche { left: .75rem; }
+  .droite { right: .75rem; }
+
+  /* ----- Réglages ----- */
+  .reglages { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); align-items: end; }
+  label { display: grid; gap: .4rem; }
+  .nom { font-size: .9rem; color: var(--muted); }
+  .nom strong { color: var(--fg); font-weight: 500; margin-left: .25rem; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  input[type="range"]:disabled { opacity: .3; }
+  .regl-f.inactif { opacity: .4; }
+  .ecouter {
+    font: inherit; cursor: pointer; padding: .7rem 1.4rem; border-radius: 999px;
+    border: 1px solid var(--accent); background: none; color: var(--accent);
+    transition: background .2s; justify-self: start;
+  }
+  .ecouter:hover, .ecouter.actif { background: rgba(110, 231, 255, .12); }
+
+  /* ----- Mesures ----- */
+  .mesures { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin: 0; }
+  /* :global → ces éléments sont créés par le script, hors du style « scoped » d'Astro */
+  .mesures :global(div) { padding: 1rem; border: 1px solid var(--line); border-radius: 12px; }
+  .mesures :global(dt) { font-size: .85rem; color: var(--muted); }
+  .mesures :global(dd) { margin: .25rem 0 0; font-size: 1.4rem; font-weight: 300; color: var(--accent); }
+  .note { margin: 0; font-size: .85rem; line-height: 1.5; }
+</style>
+
+<script>
+  // ===================================================================
+  //  CONSTANTES
+  // ===================================================================
+  const C = 343;                    // célérité du son dans l'air à 20 °C (m/s)
+  const FENETRE = 0.010;            // durée affichée par l'oscilloscope : 10 ms
+  const F_MIN = 50, F_MAX = 2000;   // plage du curseur de fréquence (Hz)
+  const VOLUME_MAX = 0.2;           // plafond de volume (protection auditive)
+  const N_HARM = 200;               // nombre d'harmoniques calculées
+  const TAILLE_BRUIT = 1 << 18;     // ≈ 5,5 s de bruit à 48 kHz (boucle sans raccord)
+
+  const PERIODIQUES = ["sinus", "carre", "triangle", "scie", "impulsion", "simple", "double"];
+  const estBruit = (type) => !PERIODIQUES.includes(type);
+  const fmt = (x, d = 0) => x.toLocaleString("fr-FR", { maximumFractionDigits: d });
+
+  // ===================================================================
+  //  SIGNAUX PÉRIODIQUES
+  //  forme(p, d) : valeur du signal pour une phase p ∈ [0, 1[
+  //  fourier(k, d) : coefficients [a_k (cos), b_k (sin)] de l'harmonique k
+  // ===================================================================
+  const SIGNAUX = {
+    sinus: {
+      forme: (p) => Math.sin(2 * Math.PI * p),
+      fourier: (k) => [0, k === 1 ? 1 : 0],
+      note: "Une seule fréquence : le son « pur ».",
+    },
+    carre: {
+      forme: (p) => (p < 0.5 ? 1 : -1),
+      fourier: (k) => [0, k % 2 ? 4 / (Math.PI * k) : 0],
+      note: "Harmoniques impaires uniquement, amplitude en 1/k (−6 dB/octave).",
+    },
+    triangle: {
+      forme: (p) => (p < 0.25 ? 4 * p : p < 0.75 ? 2 - 4 * p : 4 * p - 4),
+      fourier: (k) => [0, k % 2 ? (8 / (Math.PI * Math.PI * k * k)) * (((k - 1) / 2) % 2 ? -1 : 1) : 0],
+      note: "Harmoniques impaires uniquement, amplitude en 1/k² (−12 dB/octave) : son plus doux que le carré.",
+    },
+    scie: {
+      forme: (p) => 2 * p - 1,
+      fourier: (k) => [0, -2 / (Math.PI * k)],
+      note: "Toutes les harmoniques, amplitude en 1/k (−6 dB/octave) : son riche et brillant.",
+    },
+    impulsion: {
+      forme: (p, d) => (p < d ? 1 : 0),
+      fourier: (k, d) => [Math.sin(2 * Math.PI * k * d) / (Math.PI * k), (1 - Math.cos(2 * Math.PI * k * d)) / (Math.PI * k)],
+      note: "Les harmoniques multiples de 1/(rapport cyclique) disparaissent. À 50 %, on retrouve le carré.",
+    },
+    simple: {
+      forme: (p) => Math.max(0, Math.sin(2 * Math.PI * p)),
+      fourier: (k) => [k > 1 && k % 2 === 0 ? -2 / (Math.PI * (k * k - 1)) : 0, k === 1 ? 0.5 : 0],
+      note: "Alternances négatives supprimées (diode). Fondamentale + harmoniques paires, et une composante continue.",
+    },
+    double: {
+      forme: (p) => Math.abs(Math.sin(Math.PI * p)),
+      fourier: (k) => [-4 / (Math.PI * (4 * k * k - 1)), 0],
+      note: "Alternances négatives retournées (pont de diodes). Ici f est la fréquence du signal redressé, soit le double du sinus d'origine.",
+    },
+  };
+
+  // ===================================================================
+  //  BRUITS COLORÉS
+  //  dsp(f) : densité spectrale de puissance relative, en dB (0 dB à 1 kHz)
+  // ===================================================================
+
+  // Pondération A (CEI 61672), en dB
+  function ponderationA(f) {
+    const f2 = f * f;
+    const ra = (12194 ** 2 * f2 * f2) /
+      ((f2 + 20.6 ** 2) * Math.sqrt((f2 + 107.7 ** 2) * (f2 + 737.9 ** 2)) * (f2 + 12194 ** 2));
+    return 20 * Math.log10(ra) + 2.0;
+  }
+
+  const BRUITS = {
+    blanc: { dsp: () => 0, pente: "0 dB/octave", note: "Même puissance pour chaque hertz. Paraît aigu à l'oreille." },
+    rose: { dsp: (f) => -10 * Math.log10(f / 1000), pente: "−3 dB/octave", note: "Même puissance par octave. Référence en sonorisation et en mesure acoustique." },
+    rouge: { dsp: (f) => -20 * Math.log10(f / 1000), pente: "−6 dB/octave", note: "Aussi appelé bruit brun (mouvement brownien). Grave et sourd." },
+    bleu: { dsp: (f) => 10 * Math.log10(f / 1000), pente: "+3 dB/octave", note: "L'inverse du bruit rose : énergie croissante vers les aigus." },
+    violet: { dsp: (f) => 20 * Math.log10(f / 1000), pente: "+6 dB/octave", note: "L'inverse du bruit rouge : très aigu, sifflant." },
+    vert: {
+      dsp: (f) => -12 * Math.log2(f / 500) ** 2,
+      pente: "centré sur 500 Hz",
+      note: "Pas de définition normalisée : ici, une bande d'environ une octave centrée sur 500 Hz (le « milieu » du spectre, parfois associé aux sons de la nature).",
+    },
+    gris: {
+      dsp: (f) => Math.min(30, -ponderationA(f)),
+      pente: "inverse de la pondération A",
+      note: "Vise une sonie égale sur tout le spectre. Approximation : inverse de la pondération A, limitée à +30 dB dans le grave.",
+    },
+  };
+
+  // FFT radix-2 en place (re, im de taille puissance de 2)
+  function fft(re, im, inverse) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+      const ang = (2 * Math.PI / len) * (inverse ? 1 : -1);
+      const wr = Math.cos(ang), wi = Math.sin(ang);
+      for (let i = 0; i < n; i += len) {
+        let cr = 1, ci = 0;
+        for (let j = 0; j < len / 2; j++) {
+          const a = i + j, b = a + len / 2;
+          const tr = re[b] * cr - im[b] * ci, ti = re[b] * ci + im[b] * cr;
+          re[b] = re[a] - tr; im[b] = im[a] - ti;
+          re[a] += tr; im[a] += ti;
+          [cr, ci] = [cr * wr - ci * wi, cr * wi + ci * wr];
+        }
+      }
+    }
+  }
+
+  // Bruit coloré : spectre de phase aléatoire mis en forme puis FFT inverse
+  // → la boucle est parfaitement continue (signal périodique par construction)
+  const cacheBruit = new Map();
+  function genererBruit(type, sr) {
+    const cle = `${type}-${sr}`;
+    if (cacheBruit.has(cle)) return cacheBruit.get(cle);
+    const n = TAILLE_BRUIT;
+    const re = new Float32Array(n), im = new Float32Array(n);
+    for (let k = 1; k < n / 2; k++) {
+      const f = (k * sr) / n;
+      const mag = f < 15 ? 0 : Math.pow(10, BRUITS[type].dsp(f) / 20);  // pas d'infra-graves
+      const ph = Math.random() * 2 * Math.PI;
+      re[k] = mag * Math.cos(ph); im[k] = mag * Math.sin(ph);
+      re[n - k] = re[k]; im[n - k] = -im[k];                            // symétrie → signal réel
+    }
+    fft(re, im, true);
+    let somme = 0;
+    for (let i = 0; i < n; i++) somme += re[i] * re[i];
+    const gain = 0.25 / Math.sqrt(somme / n);                            // même valeur efficace pour tous
+    for (let i = 0; i < n; i++) re[i] *= gain;
+    cacheBruit.set(cle, re);
+    return re;
+  }
+
+  // ===================================================================
+  //  APPLICATION
+  // ===================================================================
+  document.querySelectorAll(".generateur").forEach((racine) => {
+    const $ = (s) => racine.querySelector(s);
+    const oscillo = $(".oscillo"), spectre = $(".spectre");
+    const ctxO = oscillo.getContext("2d"), ctxS = spectre.getContext("2d");
+    const curseurF = $(".curseur-f"), curseurA = $(".curseur-a"), curseurD = $(".curseur-d");
+    const bouton = $(".ecouter");
+
+    const css = getComputedStyle(document.documentElement);
+    const ACCENT = css.getPropertyValue("--accent").trim();
+    const LIGNE = css.getPropertyValue("--line").trim();
+    const GRIS = css.getPropertyValue("--muted").trim();
+
+    const etat = { type: "sinus", f: 440, a: 0.7, d: 0.2, phase: 0, positionBruit: 0 };
+    let audio = null;   // { ctx, gain, source }
+
+    // ---------- Lecture des curseurs ----------
+    const lireF = () => F_MIN * Math.pow(F_MAX / F_MIN, curseurF.value / 1000);
+
+    function majInterface() {
+      etat.f = lireF();
+      etat.a = curseurA.value / 100;
+      etat.d = curseurD.value / 100;
+      const bruit = estBruit(etat.type);
+
+      $(".val-f").textContent = `${fmt(etat.f)} Hz`;
+      $(".val-a").textContent = `${curseurA.value} %`;
+      $(".val-d").textContent = `${curseurD.value} %`;
+      curseurF.disabled = bruit;
+      $(".regl-f").classList.toggle("inactif", bruit);
+      $(".regl-d").hidden = etat.type !== "impulsion";
+      $(".axe.droite").textContent = "10 ms";
+      $(".spectre-titre").textContent = bruit ? "Densité spectrale théorique (dB relatifs)" : "Spectre théorique : harmoniques (dB relatifs)";
+
+      // Cartes de mesures
+      const mesures = bruit
+        ? [["Pente du spectre", BRUITS[etat.type].pente]]
+        : [
+            ["Période T = 1/f", `${fmt(1000 / etat.f, 2)} ms`],
+            ["Longueur d'onde λ = c/f", C / etat.f >= 1 ? `${fmt(C / etat.f, 2)} m` : `${fmt((C / etat.f) * 100)} cm`],
+            ["Périodes affichées", fmt(etat.f * FENETRE, 1)],
+          ];
+      $(".mesures").innerHTML = mesures.map(([dt, dd]) => `<div><dt>${dt}</dt><dd>${dd}</dd></div>`).join("");
+      $(".note").textContent = (bruit ? BRUITS : SIGNAUX)[etat.type].note + " Baissez le volume avant d'écouter.";
+
+      majAudio();
+      dessinerSpectre();
+    }
+
+    // ---------- Audio ----------
+    function creerOndePeriodique(ac) {
+      const real = new Float32Array(N_HARM + 1), imag = new Float32Array(N_HARM + 1);
+      for (let k = 1; k <= N_HARM; k++) [real[k], imag[k]] = SIGNAUX[etat.type].fourier(k, etat.d);
+      return ac.createPeriodicWave(real, imag);
+    }
+
+    function creerSource() {
+      const ac = audio.ctx;
+      let src;
+      if (estBruit(etat.type)) {
+        const donnees = genererBruit(etat.type, ac.sampleRate);
+        const buf = ac.createBuffer(1, donnees.length, ac.sampleRate);
+        buf.copyToChannel(donnees, 0);
+        src = ac.createBufferSource();
+        src.buffer = buf;
+        src.loop = true;
+      } else {
+        src = ac.createOscillator();
+        src.setPeriodicWave(creerOndePeriodique(ac));
+        src.frequency.value = etat.f;
+      }
+      src.connect(audio.gain);
+      src.start();
+      src.typeSource = etat.type;
+      return src;
+    }
+
+    function majAudio() {
+      if (!audio) return;
+      const t = audio.ctx.currentTime;
+      audio.gain.gain.setTargetAtTime(etat.a * VOLUME_MAX, t, 0.02);
+      const ancien = audio.source;
+
+      if (ancien.typeSource !== etat.type) {
+        // Changement de signal : fondu rapide pour éviter les clics
+        audio.gain.gain.setTargetAtTime(0, t, 0.01);
+        setTimeout(() => {
+          if (!audio) return;
+          ancien.stop();
+          audio.source = creerSource();
+          audio.gain.gain.setTargetAtTime(etat.a * VOLUME_MAX, audio.ctx.currentTime, 0.02);
+        }, 60);
+      } else if (!estBruit(etat.type)) {
+        ancien.frequency.setTargetAtTime(etat.f, t, 0.02);
+        if (etat.type === "impulsion") ancien.setPeriodicWave(creerOndePeriodique(audio.ctx));
+      }
+    }
+
+    bouton.addEventListener("click", () => {
+      if (audio) {
+        const fini = audio;
+        fini.gain.gain.setTargetAtTime(0, fini.ctx.currentTime, 0.02);
+        setTimeout(() => fini.ctx.close(), 150);
+        audio = null;
+        dessinerSpectre();   // efface la courbe mesurée
+        bouton.textContent = "▶ Écouter";
+        bouton.classList.remove("actif");
+        return;
+      }
+      const ac = new AudioContext();
+      const gain = ac.createGain();
+      gain.gain.value = 0;
+      gain.connect(ac.destination);
+      // Analyseur : mesure le spectre réellement joué
+      const analyseur = ac.createAnalyser();
+      analyseur.fftSize = 16384;
+      analyseur.smoothingTimeConstant = 0.85;
+      gain.connect(analyseur);
+      audio = { ctx: ac, gain, analyseur, mesure: new Float32Array(analyseur.frequencyBinCount) };
+      audio.source = creerSource();
+      gain.gain.setTargetAtTime(etat.a * VOLUME_MAX, ac.currentTime, 0.02);
+      bouton.textContent = "■ Arrêter";
+      bouton.classList.add("actif");
+    });
+
+    // ---------- Choix du signal ----------
+    racine.querySelectorAll(".puce").forEach((p) =>
+      p.addEventListener("click", () => {
+        racine.querySelectorAll(".puce").forEach((x) => x.classList.toggle("actif", x === p));
+        etat.type = p.dataset.type;
+        majInterface();
+      })
+    );
+    [curseurF, curseurA, curseurD].forEach((c) => c.addEventListener("input", majInterface));
+
+    // ---------- Canvas : taille réelle × densité de l'écran ----------
+    function ajuster(canvas, ctx) {
+      const r = canvas.getBoundingClientRect();
+      canvas.width = r.width * devicePixelRatio;
+      canvas.height = r.height * devicePixelRatio;
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+    new ResizeObserver(() => { ajuster(oscillo, ctxO); ajuster(spectre, ctxS); dessinerSpectre(); })
+      .observe(oscillo);
+
+    // ---------- Oscilloscope (animé) ----------
+    function dessinerOscillo() {
+      const w = oscillo.clientWidth, h = oscillo.clientHeight, mil = h / 2, amp = h * 0.38;
+      ctxO.clearRect(0, 0, w, h);
+      ctxO.strokeStyle = LIGNE; ctxO.lineWidth = 1;
+      ctxO.beginPath(); ctxO.moveTo(0, mil); ctxO.lineTo(w, mil); ctxO.stroke();
+
+      ctxO.strokeStyle = ACCENT; ctxO.lineWidth = 2; ctxO.lineJoin = "round";
+      ctxO.beginPath();
+      if (estBruit(etat.type)) {
+        const sr = 48000, donnees = genererBruit(etat.type, sr), nb = Math.round(FENETRE * sr);
+        for (let i = 0; i <= nb; i++) {
+          const v = donnees[(etat.positionBruit + i) % donnees.length] / 0.8;   // ≈ ±3,2 × valeur efficace
+          const y = mil - etat.a * amp * Math.max(-1.2, Math.min(1.2, v));
+          const x = (i / nb) * w;
+          i === 0 ? ctxO.moveTo(x, y) : ctxO.lineTo(x, y);
+        }
+        etat.positionBruit = (etat.positionBruit + 24) % donnees.length;   // défilement ralenti
+      } else {
+        const forme = SIGNAUX[etat.type].forme;
+        for (let x = 0; x <= w; x++) {
+          const p = (((etat.f * (x / w) * FENETRE + etat.phase) % 1) + 1) % 1;
+          const y = mil - etat.a * amp * forme(p, etat.d);
+          x === 0 ? ctxO.moveTo(x, y) : ctxO.lineTo(x, y);
+        }
+        etat.phase -= 0.006;   // défilement ralenti (pas la vraie vitesse)
+      }
+      ctxO.stroke();
+      if (audio) dessinerSpectre();     // spectre mesuré animé pendant l'écoute
+      requestAnimationFrame(dessinerOscillo);
+    }
+
+    // ---------- Spectre (statique, recalculé à chaque réglage) ----------
+    const F1 = 20, F2 = 20000;
+    const xF = (f, w) => (Math.log10(f / F1) / Math.log10(F2 / F1)) * w;
+
+    function dessinerSpectre() {
+      const w = spectre.clientWidth, h = spectre.clientHeight;
+      const haut = 40, bas = h - 22;                      // marges pour titre et étiquettes
+      ctxS.clearRect(0, 0, w, h);
+
+      // Courbe ou raies à tracer, en dB
+      let points = [];
+      if (estBruit(etat.type)) {
+        for (let i = 0; i <= 300; i++) {
+          const f = F1 * Math.pow(F2 / F1, i / 300);
+          points.push([f, BRUITS[etat.type].dsp(f)]);
+        }
+      } else {
+        const raies = [];
+        for (let k = 1; k <= N_HARM && k * etat.f <= F2; k++) {
+          const [a, b] = SIGNAUX[etat.type].fourier(k, etat.d);
+          const m = Math.hypot(a, b);
+          if (m > 1e-9) raies.push([k * etat.f, m]);
+        }
+        const max = Math.max(...raies.map((r) => r[1]));
+        points = raies.map(([f, m]) => [f, 20 * Math.log10(m / max)]);
+      }
+
+      // Échelle verticale : 60 dB sous le maximum, arrondie à 10 dB
+      const dBmax = Math.ceil(Math.max(...points.map((p) => p[1])) / 10) * 10;
+      const dBmin = dBmax - 60;
+      const yDB = (db) => haut + ((dBmax - Math.max(db, dBmin)) / (dBmax - dBmin)) * (bas - haut);
+
+      // Grille : décades et pas de 20 dB
+      ctxS.strokeStyle = LIGNE; ctxS.lineWidth = 1;
+      ctxS.fillStyle = GRIS; ctxS.font = "11px system-ui";
+      for (const f of [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]) {
+        const x = xF(f, w);
+        ctxS.beginPath(); ctxS.moveTo(x, haut); ctxS.lineTo(x, bas); ctxS.stroke();
+        const lib = f >= 1000 ? `${f / 1000}k` : `${f}`;
+        ctxS.textAlign = f === 20 ? "left" : f === 20000 ? "right" : "center";
+        ctxS.fillText(lib, x + (f === 20 ? 4 : f === 20000 ? -4 : 0), h - 6);
+      }
+      ctxS.textAlign = "left";
+      for (let db = dBmax; db >= dBmin; db -= 20) {
+        const y = yDB(db);
+        ctxS.beginPath(); ctxS.moveTo(0, y); ctxS.lineTo(w, y); ctxS.stroke();
+        ctxS.fillText(`${db > 0 ? "+" : ""}${db} dB`, 6, y - 4);
+      }
+
+      // Tracé
+      ctxS.strokeStyle = ACCENT; ctxS.fillStyle = ACCENT;
+      if (estBruit(etat.type)) {
+        ctxS.lineWidth = 2;
+        ctxS.beginPath();
+        points.forEach(([f, db], i) => (i ? ctxS.lineTo(xF(f, w), yDB(db)) : ctxS.moveTo(xF(f, w), yDB(db))));
+        ctxS.stroke();
+      } else {
+        ctxS.lineWidth = 2;
+        for (const [f, db] of points.filter((p) => p[1] > dBmin)) {
+          const x = xF(f, w);
+          ctxS.beginPath(); ctxS.moveTo(x, bas); ctxS.lineTo(x, yDB(db)); ctxS.stroke();
+          ctxS.beginPath(); ctxS.arc(x, yDB(db), 2.5, 0, 2 * Math.PI); ctxS.fill();
+        }
+      }
+
+      // ----- Spectre mesuré (pendant l'écoute) -----
+      if (!audio) return;
+      const { analyseur, mesure } = audio;
+      analyseur.getFloatFrequencyData(mesure);
+      const df = audio.ctx.sampleRate / analyseur.fftSize;          // résolution (Hz par case)
+
+      // Une valeur par colonne de pixels :
+      //  - signal périodique → maximum des cases (on veut voir le sommet des raies)
+      //  - bruit → moyenne de puissance des cases (le maximum surestimerait les aigus)
+      const bruit = estBruit(etat.type);
+      const colonnes = [];
+      for (let x = 0; x < w; x++) {
+        const fa = F1 * Math.pow(F2 / F1, x / w), fb = F1 * Math.pow(F2 / F1, (x + 1) / w);
+        let max = -Infinity, puissance = 0, n = 0;
+        for (let i = Math.floor(fa / df); i <= Math.ceil(fb / df) && i < mesure.length; i++) {
+          max = Math.max(max, mesure[i]);
+          puissance += Math.pow(10, mesure[i] / 10); n++;
+        }
+        colonnes.push(bruit ? 10 * Math.log10(puissance / n) : max);
+      }
+
+      // Recalage sur la courbe théorique : sommet à 0 dB (signal) ou valeur à 1 kHz (bruit)
+      let decalage;
+      if (bruit) {
+        let puissance = 0, n = 0;
+        for (let i = Math.round(800 / df); i <= Math.round(1250 / df); i++) { puissance += Math.pow(10, mesure[i] / 10); n++; }
+        decalage = BRUITS[etat.type].dsp(1000) - 10 * Math.log10(puissance / n);
+      } else {
+        decalage = 0 - Math.max(...colonnes.filter(Number.isFinite));
+      }
+      if (!Number.isFinite(decalage)) return;                       // silence (amplitude à 0)
+
+      ctxS.strokeStyle = "rgba(242, 242, 242, .55)";
+      ctxS.lineWidth = 1.25;
+      ctxS.beginPath();
+      colonnes.forEach((db, x) => {
+        const y = yDB(Number.isFinite(db) ? db + decalage : dBmin);
+        x ? ctxS.lineTo(x, y) : ctxS.moveTo(x, y);
+      });
+      ctxS.stroke();
+
+      // Légende
+      ctxS.textAlign = "right"; ctxS.font = "11px system-ui";
+      ctxS.fillStyle = ACCENT; ctxS.fillText("— théorique", w - 80, 20);
+      ctxS.fillStyle = "rgba(242, 242, 242, .8)"; ctxS.fillText("— mesuré", w - 10, 20);
+    }
+
+    majInterface();
+    requestAnimationFrame(dessinerOscillo);
+  });
+</script>

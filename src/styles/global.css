@@ -1,0 +1,41 @@
+/* ===== Couleurs du site ===== */
+:root {
+  --bg: #0e0e10;
+  --fg: #f2f2f2;
+  --muted: #9a9aa2;
+  --accent: #6ee7ff;
+  --line: #26262b;
+}
+
+/* ===== Base ===== */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+}
+
+a { color: inherit; }
+
+h1 { font-weight: 300; font-size: clamp(2.2rem, 6vw, 4.5rem); line-height: 1.1; margin: 0 0 1rem; }
+h2 { font-weight: 400; }
+
+/* ===== Utilitaires ===== */
+.muted { color: var(--muted); }
+
+/* Les éléments masqués restent masqués, même dans une grille */
+[hidden] { display: none !important; }

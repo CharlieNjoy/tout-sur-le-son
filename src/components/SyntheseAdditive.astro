@@ -1,0 +1,192 @@
+---
+// =====================================================================
+//  SYNTHÈSE ADDITIVE : on construit un son en additionnant ses harmoniques
+//  x(t) = Σ A_k · sin(2π k f t + φ_k)
+// =====================================================================
+import "../styles/applis.css";
+const N = 16;
+---
+<div class="appli synthese">
+
+  <div>
+    <p class="groupe-titre">Préréglages</p>
+    <div class="puces">
+      <button class="puce" data-preset="sinus">Sinus</button>
+      <button class="puce" data-preset="carre">Carré</button>
+      <button class="puce" data-preset="triangle">Triangle</button>
+      <button class="puce" data-preset="scie">Dent de scie</button>
+      <button class="puce" data-preset="paires">Harmoniques paires</button>
+      <button class="puce" data-preset="vide">Tout à zéro</button>
+    </div>
+  </div>
+
+  <!-- Forme d'onde résultante -->
+  <div class="ecran">
+    <p class="ecran-titre">Signal résultant (2 périodes)</p>
+    <canvas class="oscillo"></canvas>
+  </div>
+
+  <!-- Harmoniques : un curseur vertical par harmonique -->
+  <div class="ecran harmoniques">
+    <p class="ecran-titre">Amplitude de chaque harmonique</p>
+    <div class="barres">
+      {Array.from({ length: N }, (_, i) => (
+        <label class="barre">
+          <input type="range" class="harm" min="0" max="100" value={i === 0 ? 100 : 0} data-k={i + 1} />
+          <span class="k">{i + 1}</span>
+        </label>
+      ))}
+    </div>
+  </div>
+
+  <div class="reglages">
+    <label>
+      <span class="nom">Fondamentale <strong class="val-f">220 Hz</strong></span>
+      <input type="range" class="curseur-f" min="0" max="1000" value="500" />
+    </label>
+    <label>
+      <span class="nom">Volume <strong class="val-a">70 %</strong></span>
+      <input type="range" class="curseur-a" min="0" max="100" value="70" />
+    </label>
+    <button class="puce phases">Phases aléatoires</button>
+    <button class="bouton-son">▶ Écouter</button>
+  </div>
+
+  <p class="note">
+    L'harmonique k a pour fréquence k × f. Essayez « Phases aléatoires » en écoutant :
+    la forme d'onde change complètement, mais le timbre reste quasiment le même.
+    L'oreille est surtout sensible aux amplitudes des harmoniques, très peu à leurs phases (loi acoustique d'Ohm).
+    Baissez le volume avant d'écouter.
+  </p>
+</div>
+
+<style>
+  .harmoniques { padding: 2.25rem 1rem 1rem; }
+  .barres { display: grid; grid-template-columns: repeat(16, 1fr); gap: .25rem; }
+  .barre { display: flex; flex-direction: column; align-items: center; gap: .35rem; }
+  .barre input {
+    writing-mode: vertical-lr; direction: rtl;   /* curseur vertical, 0 en bas */
+    width: 1.5rem; height: 140px; margin: 0;
+  }
+  .k { font-size: .75rem; color: var(--muted); }
+  @media (max-width: 640px) {
+    .barres { grid-template-columns: repeat(8, 1fr); row-gap: 1rem; }
+  }
+</style>
+
+<script>
+  import { fmt, couleurs, logVers, preparerCanvas, boutonSon } from "../scripts/outils.js";
+
+  const F_MIN = 50, F_MAX = 1000;
+
+  // Amplitudes (0–1) et signes des préréglages, pour k = 1 à 16
+  const PRESETS = {
+    sinus: (k) => [k === 1 ? 1 : 0, 0],
+    carre: (k) => [k % 2 ? 1 / k : 0, 0],
+    triangle: (k) => [k % 2 ? 1 / (k * k) : 0, ((k - 1) / 2) % 2 ? Math.PI : 0],
+    scie: (k) => [1 / k, k % 2 ? 0 : Math.PI],
+    paires: (k) => [k === 1 ? 1 : k % 2 ? 0 : 1 / k, 0],
+    vide: () => [0, 0],
+  };
+
+  document.querySelectorAll(".synthese").forEach((racine) => {
+    const $ = (s) => racine.querySelector(s);
+    const curseurs = [...racine.querySelectorAll(".harm")];
+    const N = curseurs.length;
+    const phases = new Array(N).fill(0);
+    const coul = couleurs();
+
+    const oscillo = $(".oscillo");
+    const ctx = preparerCanvas(oscillo, () => dessiner());
+
+    const lireF = () => logVers($(".curseur-f").value, F_MIN, F_MAX);
+    const amplitudes = () => curseurs.map((c) => c.value / 100);
+
+    // Échantillon du signal pour une phase p ∈ [0, 1[
+    const valeur = (p, A) => A.reduce((s, a, i) => s + a * Math.sin(2 * Math.PI * (i + 1) * p + phases[i]), 0);
+
+    function dessiner() {
+      const w = oscillo.clientWidth, h = oscillo.clientHeight, mil = h / 2;
+      const A = amplitudes();
+      const pts = [];
+      for (let x = 0; x <= w; x++) pts.push(valeur((2 * x) / w, A));
+      const max = Math.max(1e-9, ...pts.map(Math.abs));   // normalisation : la courbe remplit l'écran
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = coul.ligne; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, mil); ctx.lineTo(w, mil); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(w / 2, 30); ctx.lineTo(w / 2, h - 10); ctx.stroke();  // fin de la 1re période
+
+      ctx.strokeStyle = coul.accent; ctx.lineWidth = 2; ctx.lineJoin = "round";
+      ctx.beginPath();
+      pts.forEach((v, x) => {
+        const y = mil - (v / max) * h * 0.38;
+        x ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    // ----- Audio : onde périodique construite à partir des harmoniques -----
+    function onde(ac) {
+      const real = new Float32Array(N + 1), imag = new Float32Array(N + 1);
+      amplitudes().forEach((a, i) => {
+        // A·sin(kωt + φ) = A·cos φ · sin(kωt) + A·sin φ · cos(kωt)
+        imag[i + 1] = a * Math.cos(phases[i]);
+        real[i + 1] = a * Math.sin(phases[i]);
+      });
+      return ac.createPeriodicWave(real, imag);   // normalisée : volume stable
+    }
+
+    const son = boutonSon($(".bouton-son"), {
+      volume: () => $(".curseur-a").value / 100,
+      demarrer: (ac, sortie) => {
+        const osc = ac.createOscillator();
+        osc.setPeriodicWave(onde(ac));
+        osc.frequency.value = lireF();
+        osc.connect(sortie);
+        osc.start();
+        return { osc };
+      },
+    });
+
+    function maj() {
+      $(".val-f").textContent = `${fmt(lireF())} Hz`;
+      $(".val-a").textContent = `${$(".curseur-a").value} %`;
+      const s = son.actif();
+      if (s) {
+        const silence = amplitudes().every((a) => a === 0);
+        s.osc.setPeriodicWave(onde(s.ac));
+        s.osc.frequency.setTargetAtTime(lireF(), s.ac.currentTime, 0.02);
+        son.volume(silence ? 0 : $(".curseur-a").value / 100);
+      }
+      dessiner();
+    }
+
+    // ----- Événements -----
+    curseurs.forEach((c) => c.addEventListener("input", () => {
+      racine.querySelectorAll("[data-preset]").forEach((p) => p.classList.remove("actif"));
+      maj();
+    }));
+    $(".curseur-f").addEventListener("input", maj);
+    $(".curseur-a").addEventListener("input", maj);
+
+    racine.querySelectorAll("[data-preset]").forEach((b) =>
+      b.addEventListener("click", () => {
+        racine.querySelectorAll("[data-preset]").forEach((p) => p.classList.toggle("actif", p === b));
+        curseurs.forEach((c, i) => {
+          const [a, ph] = PRESETS[b.dataset.preset](i + 1);
+          c.value = Math.round(a * 100);
+          phases[i] = ph;
+        });
+        maj();
+      })
+    );
+
+    $(".phases").addEventListener("click", () => {
+      for (let i = 0; i < N; i++) phases[i] = Math.random() * 2 * Math.PI;
+      maj();
+    });
+
+    maj();
+  });
+</script>

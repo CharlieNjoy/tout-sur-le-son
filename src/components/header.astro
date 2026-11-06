@@ -1,0 +1,35 @@
+---
+// Menu principal : l'ordre des lignes = l'ordre d'affichage
+const liens = [
+  { href: "/", label: "Accueil" },
+  { href: "/cours", label: "Cours" },
+  { href: "/applications", label: "Applications" },
+  { href: "/ressources", label: "Ressources" },
+  { href: "/contact", label: "Contact" },
+];
+
+const actuel = Astro.url.pathname.replace(/\/$/, "") || "/";
+// Un lien est actif sur sa page et ses sous-pages (ex. /applications/generateur)
+const estActif = (href) => (href === "/" ? actuel === "/" : actuel === href || actuel.startsWith(href + "/"));
+---
+<header>
+  <a href="/" class="logo">Tout sur le son</a>
+  <nav>
+    {liens.map((l) => (
+      <a href={l.href} class={estActif(l.href) ? "actif" : ""}>{l.label}</a>
+    ))}
+  </nav>
+</header>
+
+<style>
+  header {
+    display: flex; flex-wrap: wrap; gap: 1rem;
+    justify-content: space-between; align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .logo { text-decoration: none; font-weight: 500; letter-spacing: .05em; }
+  nav { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+  nav a { text-decoration: none; color: var(--muted); transition: color .2s; }
+  nav a:hover, nav a.actif { color: var(--fg); }
+</style>
