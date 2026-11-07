@@ -1,0 +1,89 @@
+---
+import Layout from "../layouts/Layout.astro";
+import EntrainementBTS from "../components/EntrainementBTS.astro";
+import { categories, TYPES } from "../data/ressources.js";
+
+// Catégories de ressources.js à mettre en avant ici comme compléments d'entraînement
+const idsEntrainement = ["oreille", "audition", "quiz"];
+const categoriesEntrainement = idsEntrainement
+  .map((id) => categories.find((c) => c.id === id))
+  .filter(Boolean);
+---
+<Layout title="Entraînement" description="Entraînement BTS Son (annales) et exercices d'oreille, de reconnaissance et de culture audio">
+  <h1>Entraînement</h1>
+  <p class="muted intro">S'entraîner à partir des vraies annales du BTS Métiers de l'Audiovisuel, et affûter son oreille avec des exercices et quiz externes.</p>
+
+  <!-- ===== QUIZ BTS ===== -->
+  <section class="bloc">
+    <h2>Entraînement BTS</h2>
+    <p class="muted bloc-intro">Questions reprises des sujets et corrigés officiels (2016-2025 et sujet zéro) : physique acoustique, technologie du son, électricité. Choisissez une matière et une année, ou lancez une série aléatoire.</p>
+    <EntrainementBTS />
+  </section>
+
+  <!-- ===== RESSOURCES D'ENTRAÎNEMENT (menus repliables) ===== -->
+  {categoriesEntrainement.map((c, i) => (
+    <details class="bloc accordeon" open={i === 0}>
+      <summary>
+        <h2>{c.titre}</h2>
+        <span class="chevron" aria-hidden="true">⌄</span>
+      </summary>
+      <p class="muted bloc-intro">{c.intro}</p>
+      <div class="grille">
+        {c.items.map((r) => (
+          <a class="ressource" href={r.url} target="_blank" rel="noopener noreferrer">
+            <span class="ligne">
+              <span class="nom">{r.nom}</span>
+              <span class={`langue ${r.langue}`}>{r.langue.toUpperCase()}</span>
+            </span>
+            <span class={`type ${r.type}`}>{TYPES[r.type]}</span>
+            {r.desc && <span class="desc">{r.desc}</span>}
+          </a>
+        ))}
+      </div>
+    </details>
+  ))}
+
+  <p class="muted lien-ressources">Plus de ressources (logiciels de mesure, simulations, chaînes YouTube…) sur la page <a href="/ressources">Ressources</a>.</p>
+
+  <style>
+    .intro { margin: 0 0 2.5rem; }
+    .bloc { margin-bottom: 3rem; }
+    .bloc h2 { margin: 0; font-weight: 400; }
+    .bloc-intro { margin: 1rem 0 1.25rem; font-size: .9rem; }
+
+    /* ----- Accordéon ----- */
+    .accordeon { border-top: 1px solid var(--line); padding-top: 1.25rem; }
+    .accordeon summary {
+      display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+      cursor: pointer; list-style: none;
+    }
+    .accordeon summary::-webkit-details-marker { display: none; }
+    .accordeon .chevron {
+      color: var(--muted); font-size: 1.3rem; line-height: 1; transition: transform .25s;
+    }
+    .accordeon[open] .chevron { transform: rotate(180deg); }
+    .accordeon summary:hover h2 { color: var(--accent); transition: color .2s; }
+
+    .grille { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+    .ressource {
+      display: flex; flex-direction: column; gap: .35rem;
+      padding: .8rem .95rem; border: 1px solid var(--line); border-radius: 10px;
+      text-decoration: none; color: var(--fg); transition: border-color .2s, box-shadow .2s;
+    }
+    .ressource:hover { border-color: var(--accent); box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+    .ligne { display: flex; justify-content: space-between; align-items: start; gap: .5rem; }
+    .nom { font-size: .95rem; line-height: 1.3; }
+    .langue {
+      flex-shrink: 0; font-size: .65rem; letter-spacing: .05em;
+      padding: .05rem .35rem; border-radius: 5px; border: 1px solid var(--line); color: var(--muted);
+    }
+    .langue.fr { color: var(--accent); border-color: rgba(110, 231, 255, .4); }
+    .type { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+    .type.logiciel { color: #b48cff; }
+    .type.appli { color: #6fdc8c; }
+    .type.youtube { color: #ff6b5a; }
+    .desc { color: var(--muted); font-size: .84rem; line-height: 1.45; }
+
+    .lien-ressources { font-size: .9rem; }
+  </style>
+</Layout>

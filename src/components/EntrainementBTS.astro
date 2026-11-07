@@ -1,0 +1,398 @@
+---
+import "../styles/applis.css";
+import { questions, MATIERES, OPTIONS, annees, libelleAnnee } from "../data/entrainement-bts.js";
+
+const matieres = Object.entries(MATIERES); // [[id, label], ...]
+const options = Object.entries(OPTIONS);
+---
+<div class="appli entrainement-bts">
+  <!-- Données transmises au script -->
+  <script type="application/json" id="donnees-entrainement" set:html={JSON.stringify(questions)} />
+
+  <!-- ===== ÉCRAN 1 : réglages ===== -->
+  <div class="ecran-reglages">
+    <div>
+      <p class="groupe-titre">Option</p>
+      <div class="puces" data-groupe="option">
+        {options.map(([id, label], i) => (
+          <button type="button" class={`puce ${i === 0 ? "actif" : ""}`} data-valeur={id}>{label}</button>
+        ))}
+      </div>
+    </div>
+
+    <div>
+      <p class="groupe-titre">Matière</p>
+      <div class="puces" data-groupe="matiere">
+        <button type="button" class="puce actif" data-valeur="toutes">Toutes</button>
+        {matieres.map(([id, label]) => (
+          <button type="button" class="puce" data-valeur={id}>{label}</button>
+        ))}
+      </div>
+    </div>
+
+    <div>
+      <p class="groupe-titre">Année</p>
+      <div class="puces" data-groupe="annee">
+        <button type="button" class="puce actif" data-valeur="toutes">Toutes (aléatoire)</button>
+        {annees.map((a) => (
+          <button type="button" class="puce" data-valeur={a}>{libelleAnnee(a)}</button>
+        ))}
+      </div>
+    </div>
+
+    <div class="reglages-bas">
+      <label class="nombre">
+        <span class="nom">Nombre de questions</span>
+        <input type="number" id="nb-questions" min="3" max="45" value="10" />
+      </label>
+      <button type="button" class="bouton-son" id="demarrer">Démarrer l'entraînement</button>
+    </div>
+
+    <p class="muted note" id="compte-dispo"></p>
+
+    <div class="historique" id="historique" hidden>
+      <p class="groupe-titre">Dernières tentatives</p>
+      <div class="historique-lignes" id="historique-lignes"></div>
+    </div>
+  </div>
+
+  <!-- ===== ÉCRAN 2 : question ===== -->
+  <div class="ecran-quiz" hidden>
+    <div class="quiz-entete">
+      <span class="muted" id="quiz-position"></span>
+      <span class="quiz-tag" id="quiz-tag"></span>
+    </div>
+    <div class="quiz-barre"><div class="quiz-barre-remplie" id="quiz-progression"></div></div>
+
+    <h2 id="quiz-question"></h2>
+    <p class="muted quiz-source" id="quiz-source"></p>
+
+    <div class="quiz-choix" id="quiz-choix"></div>
+
+    <div class="quiz-correction" id="quiz-correction" hidden>
+      <p class="quiz-verdict" id="quiz-verdict"></p>
+      <p class="muted" id="quiz-explication"></p>
+      <button type="button" class="bouton-son" id="suivant">Question suivante</button>
+    </div>
+  </div>
+
+  <!-- ===== ÉCRAN 3 : score ===== -->
+  <div class="ecran-score" hidden>
+    <h2>Résultat</h2>
+    <dl class="mesures">
+      <div><dt>Score</dt><dd id="score-note"></dd></div>
+      <div><dt>Bonnes réponses</dt><dd id="score-bonnes"></dd></div>
+      <div><dt>Matière la plus solide</dt><dd id="score-forte"></dd></div>
+      <div><dt>Matière à revoir</dt><dd id="score-faible"></dd></div>
+    </dl>
+    <div class="score-revue" id="score-revue"></div>
+    <button type="button" class="bouton-son" id="recommencer">Recommencer</button>
+  </div>
+
+</div>
+
+<style>
+  .entrainement-bts { max-width: 640px; }
+
+  /* ----- Réglages ----- */
+  .ecran-reglages { display: grid; gap: 1.5rem; }
+  .reglages-bas { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: end; }
+  .nombre { display: grid; gap: .4rem; }
+  .nombre input {
+    font: inherit; width: 6rem; padding: .5rem .7rem; color: var(--fg); background: none;
+    border: 1px solid var(--line); border-radius: 8px;
+  }
+  .nombre input:focus { outline: none; border-color: var(--accent); }
+  #demarrer:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ----- Historique ----- */
+  .historique { margin-top: .5rem; }
+  .historique-lignes { display: grid; gap: .5rem; margin-top: .6rem; }
+  .historique-ligne {
+    display: flex; justify-content: space-between; gap: 1rem; font-size: .83rem;
+    padding: .55rem .8rem; border: 1px solid var(--line); border-radius: 8px; color: var(--muted);
+  }
+  .historique-ligne .note { color: var(--fg); font-weight: 500; }
+
+  /* ----- Question ----- */
+  .quiz-entete { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; }
+  .quiz-tag {
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--accent);
+    padding: .2rem .6rem; border: 1px solid rgba(110, 231, 255, .4); border-radius: 999px;
+  }
+  .quiz-barre { height: 3px; background: var(--line); border-radius: 2px; margin: .75rem 0 1.5rem; overflow: hidden; }
+  .quiz-barre-remplie { height: 100%; background: var(--accent); width: 0%; transition: width .3s; }
+  #quiz-question { font-size: 1.3rem; font-weight: 400; line-height: 1.4; margin: 0 0 .5rem; }
+  .quiz-source { font-size: .8rem; margin: 0 0 1.5rem; font-style: italic; }
+
+  .quiz-choix { display: grid; gap: .75rem; }
+  .quiz-option {
+    font: inherit; text-align: left; cursor: pointer; padding: .9rem 1.1rem;
+    border: 1px solid var(--line); border-radius: 10px; background: none; color: var(--fg);
+    transition: border-color .2s, background .2s;
+  }
+  .quiz-option:hover:not(:disabled) { border-color: var(--accent); }
+  .quiz-option:disabled { cursor: default; }
+  .quiz-option.bonne { border-color: #6fdc8c; background: rgba(111, 220, 140, .1); }
+  .quiz-option.mauvaise { border-color: #ff6b5a; background: rgba(255, 107, 90, .1); }
+
+  .quiz-correction { margin-top: 1.5rem; display: grid; gap: .5rem; }
+  .quiz-verdict { font-size: 1.05rem; margin: 0; }
+  .quiz-verdict.ok { color: #6fdc8c; }
+  .quiz-verdict.ko { color: #ff6b5a; }
+
+  /* ----- Score ----- */
+  .ecran-score h2 { margin-top: 0; }
+  .score-revue { display: grid; gap: .5rem; margin: 1.5rem 0; }
+  .score-ligne {
+    display: flex; justify-content: space-between; gap: 1rem; font-size: .88rem;
+    padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 8px;
+  }
+  .score-ligne.ok { color: #6fdc8c; }
+  .score-ligne.ko { color: #ff6b5a; }
+</style>
+
+<script>
+  import gsap from "gsap";
+
+  const racine = document.querySelector(".entrainement-bts");
+  const toutes = JSON.parse(document.getElementById("donnees-entrainement").textContent);
+
+  const LABELS_MATIERE = {
+    acoustique: "Physique acoustique",
+    technologie: "Technologie du son",
+    electricite: "Électricité",
+  };
+  const libelleAnnee = (a) => (a === "0" ? "Sujet zéro" : a);
+  const LABELS_OPTION = Object.fromEntries(
+    [...racine.querySelectorAll('[data-groupe="option"] .puce')].map((b) => [b.dataset.valeur, b.textContent])
+  );
+
+  // ----- Historique des tentatives (localStorage, best-effort) -----
+  const CLE_HISTORIQUE = "entrainement-bts-historique";
+  function chargerHistorique() {
+    try {
+      const brut = window.localStorage.getItem(CLE_HISTORIQUE);
+      return brut ? JSON.parse(brut) : [];
+    } catch { return []; }
+  }
+  function enregistrerTentative(t) {
+    try {
+      const h = chargerHistorique();
+      h.unshift(t);
+      window.localStorage.setItem(CLE_HISTORIQUE, JSON.stringify(h.slice(0, 20)));
+    } catch { /* stockage indisponible : on ignore */ }
+  }
+  function afficherHistorique() {
+    const bloc = racine.querySelector("#historique");
+    const lignes = racine.querySelector("#historique-lignes");
+    const h = chargerHistorique();
+    if (h.length === 0) { bloc.hidden = true; return; }
+    bloc.hidden = false;
+    lignes.innerHTML = "";
+    h.slice(0, 5).forEach((t) => {
+      const div = document.createElement("div");
+      div.className = "historique-ligne";
+      const date = new Date(t.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+      div.innerHTML = `<span>${date} · ${LABELS_OPTION[t.option] ?? t.option}${t.matiere !== "toutes" ? " · " + (LABELS_MATIERE[t.matiere] ?? t.matiere) : ""}${t.annee !== "toutes" ? " · " + libelleAnnee(t.annee) : ""}</span><span class="note">${t.bonnes}/${t.total} (${t.pct}%)</span>`;
+      lignes.appendChild(div);
+    });
+  }
+
+  // ----- États des filtres -----
+  let optionChoisie = racine.querySelector('[data-groupe="option"] .puce.actif')?.dataset.valeur || "son";
+  let matiereChoisie = "toutes";
+  let anneeChoisie = "toutes";
+
+  const ecranReglages = racine.querySelector(".ecran-reglages");
+  const ecranQuiz = racine.querySelector(".ecran-quiz");
+  const ecranScore = racine.querySelector(".ecran-score");
+  const compteDispo = racine.querySelector("#compte-dispo");
+  const nbInput = racine.querySelector("#nb-questions");
+
+  function melanger(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function dispo() {
+    return toutes.filter((q) =>
+      q.option === optionChoisie &&
+      (matiereChoisie === "toutes" || q.matiere === matiereChoisie) &&
+      (anneeChoisie === "toutes" || q.annee === anneeChoisie)
+    );
+  }
+
+  function majCompte() {
+    const n = dispo().length;
+    const demarrerBouton = racine.querySelector("#demarrer");
+    compteDispo.textContent = n > 0
+      ? `${n} question${n > 1 ? "s" : ""} disponible${n > 1 ? "s" : ""} pour cette sélection.`
+      : `Aucune question en banque pour l'option « ${LABELS_OPTION[optionChoisie] ?? optionChoisie} » pour l'instant — revenez bientôt.`;
+    demarrerBouton.disabled = n === 0;
+    nbInput.max = String(Math.max(n, 1));
+    if (Number(nbInput.value) > n) nbInput.value = String(Math.max(n, 1));
+  }
+
+  // ----- Puces de sélection (option / matière / année) -----
+  racine.querySelectorAll(".puces").forEach((groupe) => {
+    const nom = groupe.dataset.groupe;
+    groupe.querySelectorAll(".puce").forEach((bouton) => {
+      bouton.addEventListener("click", () => {
+        groupe.querySelectorAll(".puce").forEach((b) => b.classList.remove("actif"));
+        bouton.classList.add("actif");
+        if (nom === "option") optionChoisie = bouton.dataset.valeur || "son";
+        if (nom === "matiere") matiereChoisie = bouton.dataset.valeur || "toutes";
+        if (nom === "annee") anneeChoisie = bouton.dataset.valeur || "toutes";
+        majCompte();
+      });
+    });
+  });
+  majCompte();
+  afficherHistorique();
+
+  // ----- Déroulé du quiz -----
+  let file = [];
+  let index = 0;
+  let bonnes = 0;
+  const reponses = [];
+
+  function demarrer() {
+    const d = dispo();
+    if (d.length === 0) return;
+    const n = Math.min(Math.max(Number(nbInput.value) || 10, 1), d.length);
+    file = melanger(d).slice(0, n);
+    index = 0;
+    bonnes = 0;
+    reponses.length = 0;
+
+    ecranReglages.hidden = true;
+    ecranScore.hidden = true;
+    ecranQuiz.hidden = false;
+    gsap.fromTo(ecranQuiz, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .4 });
+    afficherQuestion();
+  }
+
+  function afficherQuestion() {
+    const q = file[index];
+    const position = racine.querySelector("#quiz-position");
+    const tag = racine.querySelector("#quiz-tag");
+    const barre = racine.querySelector("#quiz-progression");
+    const titre = racine.querySelector("#quiz-question");
+    const source = racine.querySelector("#quiz-source");
+    const choixDiv = racine.querySelector("#quiz-choix");
+    const correction = racine.querySelector("#quiz-correction");
+
+    position.textContent = `Question ${index + 1} / ${file.length}`;
+    tag.textContent = `${LABELS_MATIERE[q.matiere]} · ${libelleAnnee(q.annee)}`;
+    barre.style.width = `${(index / file.length) * 100}%`;
+    titre.textContent = q.question;
+    source.textContent = `Source : ${q.source}`;
+    correction.hidden = true;
+
+    // On mélange l'ordre d'affichage des choix (la bonne réponse est toujours
+    // à l'index 0 dans les données)
+    const ordre = melanger(q.choix.map((texte, i) => ({ texte, bonne: i === q.correct })));
+
+    choixDiv.innerHTML = "";
+    ordre.forEach((c) => {
+      const bouton = document.createElement("button");
+      bouton.type = "button";
+      bouton.className = "quiz-option";
+      bouton.textContent = c.texte;
+      bouton.addEventListener("click", () => repondre(bouton, c.bonne, q));
+      choixDiv.appendChild(bouton);
+    });
+
+    gsap.fromTo(titre, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .35 });
+  }
+
+  function repondre(bouton, bonne, q) {
+    const choixDiv = racine.querySelector("#quiz-choix");
+    const options = [...choixDiv.querySelectorAll(".quiz-option")];
+    options.forEach((o) => (o.disabled = true));
+
+    options.forEach((o) => {
+      if (o === bouton) o.classList.add(bonne ? "bonne" : "mauvaise");
+    });
+    if (!bonne) {
+      // on met aussi en évidence la bonne réponse parmi les options affichées
+      const texteCorrect = q.choix[q.correct];
+      const b = options.find((o) => o.textContent === texteCorrect);
+      b?.classList.add("bonne");
+    }
+
+    if (bonne) bonnes++;
+    reponses.push({ q, ok: bonne });
+
+    const verdict = racine.querySelector("#quiz-verdict");
+    const explication = racine.querySelector("#quiz-explication");
+    const correction = racine.querySelector("#quiz-correction");
+
+    verdict.textContent = bonne ? "Bonne réponse." : "Mauvaise réponse.";
+    verdict.className = `quiz-verdict ${bonne ? "ok" : "ko"}`;
+    explication.textContent = q.explication + (q.verifie ? "" : " (réponse calculée/recoupée à partir du sujet officiel, pas de corrigé publié pour cette session)");
+    correction.hidden = false;
+    gsap.fromTo(correction, { opacity: 0 }, { opacity: 1, duration: .3 });
+  }
+
+  racine.querySelector("#suivant").addEventListener("click", () => {
+    index++;
+    if (index >= file.length) afficherScore();
+    else afficherQuestion();
+  });
+
+  function afficherScore() {
+    ecranQuiz.hidden = true;
+    ecranScore.hidden = false;
+    gsap.fromTo(ecranScore, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .4 });
+
+    const total = file.length;
+    const pct = Math.round((bonnes / total) * 100);
+    racine.querySelector("#score-note").textContent = `${pct}%`;
+    racine.querySelector("#score-bonnes").textContent = `${bonnes} / ${total}`;
+
+    enregistrerTentative({
+      date: Date.now(), option: optionChoisie, matiere: matiereChoisie, annee: anneeChoisie,
+      bonnes, total, pct,
+    });
+
+    // Score par matière
+    const parMatiere = {};
+    reponses.forEach(({ q, ok }) => {
+      parMatiere[q.matiere] ??= { ok: 0, total: 0 };
+      parMatiere[q.matiere].total++;
+      if (ok) parMatiere[q.matiere].ok++;
+    });
+    const entrees = Object.entries(parMatiere).map(([m, s]) => ({ m, ratio: s.ok / s.total, ...s }));
+    entrees.sort((a, b) => b.ratio - a.ratio);
+    racine.querySelector("#score-forte").textContent = entrees[0] ? LABELS_MATIERE[entrees[0].m] : "—";
+    racine.querySelector("#score-faible").textContent = entrees.at(-1) ? LABELS_MATIERE[entrees.at(-1).m] : "—";
+
+    // Revue des questions ratées
+    const revue = racine.querySelector("#score-revue");
+    revue.innerHTML = "";
+    const ratees = reponses.filter((r) => !r.ok);
+    if (ratees.length === 0) {
+      revue.innerHTML = `<p class="muted">Aucune erreur, excellent !</p>`;
+    } else {
+      ratees.forEach(({ q }) => {
+        const ligne = document.createElement("div");
+        ligne.className = "score-ligne ko";
+        ligne.innerHTML = `<span>${q.question}</span><span>${libelleAnnee(q.annee)}</span>`;
+        revue.appendChild(ligne);
+      });
+    }
+  }
+
+  racine.querySelector("#demarrer").addEventListener("click", demarrer);
+  racine.querySelector("#recommencer").addEventListener("click", () => {
+    ecranScore.hidden = true;
+    ecranReglages.hidden = false;
+    gsap.fromTo(ecranReglages, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .4 });
+  });
+</script>

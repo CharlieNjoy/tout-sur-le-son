@@ -22,32 +22,64 @@ export const matieres = [
     ],
     chapitres: [
       {
-        titre: "Introduction",
+        titre: "Généralités",
         niveaux: {
-          debutant: ["Qu'est-ce que le son ?", "Phénomènes sonores"],
+          debutant: ["Qu'est-ce que le son ?", "La science du son", "Phénomènes sonores de base"],
         },
       },
       {
         titre: "Signaux",
         niveaux: {
-          debutant: ["Le signal sonore", "Le spectre"],
-          intermediaire: ["Classement et propriétés", "Signaux périodiques", "Signaux non périodiques", "Dynamique", "Phase"],
-          confirme: ["Signal sinusoïdal", "Transformée de Fourier", "Distorsion", "Modulation", "Phase"],
+          debutant: ["La représentation du son", "Le spectre"],
+          intermediaire: ["Classement et propriétés", "Signaux périodiques", "Signaux non périodiques", "Dynamique et décibel", "Phase et déphasage"],
+          confirme: ["Signal sinusoïdal", "Transformée de Fourier", "Distorsion", "Modulation"],
         },
       },
       {
         titre: "L'onde sonore",
         niveaux: {
-          debutant: ["Vitesse du son", "Propagation"],
-          intermediaire: ["L'onde mécanique", "Vitesse", "Longueur d'onde", "Absorption", "Effet Doppler"],
-          confirme: ["Pression et intensité", "L'onde spatiotemporelle", "Interfaces", "Ondes stationnaires"],
+          debutant: ["Propagation"],
+          intermediaire: ["L'onde mécanique", "Vitesse du son", "Longueur d'onde", "Absorption", "Effet Doppler"],
+          confirme: ["Pression et intensité acoustique", "Onde spatiotemporelle", "Interfaces et réflexions", "Ondes stationnaires", "Résonances des tubes", "Résonances des cordes"],
         },
       },
       {
         titre: "Psychoacoustique",
         niveaux: {
-          debutant: ["Limites de perception", "Biais et illusions"],
-          intermediaire: ["L'oreille", "SPL : Sound Pressure Level", "Perception de l'intensité", "Pondérations", "Perception de la hauteur", "Effet de masquage"],
+          debutant: ["Le champ perceptif", "Biais et illusions"],
+          intermediaire: ["L'oreille", "Le dB SPL", "La sommation de signaux", "Perception de l'intensité", "Perception de la hauteur", "Effet de masquage"],
+          confirme: ["Perception de la spatialisation", "Reproduction stéréophonique", "Captation stéréophonique", "Systèmes de spatialisation 3D"],
+        },
+      },
+      {
+        titre: "Champ libre",
+        niveaux: {
+          intermediaire: ["Types de sources", "Puissance et niveau de puissance des sources", "Ondes sphériques", "Directivité des sources"],
+          confirme: ["Ondes cylindriques", "Systèmes directifs", "Calage système"],
+        },
+      },
+      {
+        titre: "Champ réverbéré",
+        niveaux: {
+          debutant: ["La réverbération"],
+          intermediaire: ["Théorie de Sabine", "Niveau réverbéré", "Propriétés des salles", "Modes propres"],
+          confirme: ["Niveau de pression et d'intensité", "Théorie d'Eyring", "Autres méthodes de prédiction du temps de réverbération"],
+        },
+      },
+      {
+        titre: "Couplage",
+        niveaux: {
+          debutant: ["Principe du couplage acoustique", "Isolation phonique"],
+          intermediaire: ["Transmission et affaiblissement", "Couplage en régime stationnaire"],
+          confirme: ["Couplage en régime transitoire"],
+        },
+      },
+      {
+        titre: "Correction acoustique",
+        niveaux: {
+          debutant: ["L'absorption du son"],
+          intermediaire: ["Matériaux absorbants", "Matériaux résonnants", "Diffuseurs"],
+          confirme: ["Correction numérique"],
         },
       },
     ],

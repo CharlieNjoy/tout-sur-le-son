@@ -38,7 +38,7 @@ const libelle = (v) => {
 
 const CATEGORIES = [
   {
-    id: "micros", nom: "Micros", onglet: "MICRO",
+    id: "micros", nom: "Micros", onglet: "MICRO", ficheCol: 15,
     colonnes: [
       { key: "capteur", col: 2, label: "Capteur", f: libelle },
       { key: "membrane", col: 3, label: "Membrane", f: libelle },
@@ -58,7 +58,7 @@ const CATEGORIES = [
     ],
   },
   {
-    id: "casques", nom: "Casques", onglet: "CASQUES",
+    id: "casques", nom: "Casques", onglet: "CASQUES", ficheCol: 17,
     colonnes: [
       { key: "oreille", col: 2, label: "Type", f: libelle },
       { key: "ouverture", col: 3, label: "Ouverture", f: libelle },
@@ -75,7 +75,7 @@ const CATEGORIES = [
     ],
   },
   {
-    id: "enceintes", nom: "Enceintes actives", onglet: "HP actif",
+    id: "enceintes", nom: "Enceintes actives", onglet: "HP actif", ficheCol: 13,
     colonnes: [
       { key: "puissance", col: 2, label: "Puissance RMS", unite: "W", num: true, mieux: "haut", log: true },
       { key: "f3", col: 3, label: "F basse (−3 dB)", unite: "Hz", num: true, mieux: "bas", log: true },
@@ -121,6 +121,8 @@ function construire(cat) {
         r[c.key] = c.num ? nombre(l[c.col]) : (c.f ?? texte)(l[c.col]);
       }
       for (const c of cat.colonnes) if (c.calc) r[c.key] = c.calc(r);
+      // Lien direct vers la fiche technique en PDF (si renseigné sur le tableur)
+      r.fiche = cat.ficheCol != null ? texte(l[cat.ficheCol]) : null;
       return r;
     })
     .filter((r) => r.modele !== "—");

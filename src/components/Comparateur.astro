@@ -98,6 +98,12 @@ import { materiel } from "../data/materiel.js";
   :global(.comparateur .nom-marque) { color: var(--muted); font-size: .78rem; }
   :global(.comparateur input[type="checkbox"]) { accent-color: var(--accent); }
   :global(.comparateur td.meilleur) { color: var(--accent); font-weight: 600; }
+  :global(.comparateur .lien-fiche) {
+    display: inline-flex; align-items: center; font-size: .78rem; text-decoration: none;
+    color: var(--accent); border: 1px solid rgba(110, 231, 255, .4); border-radius: 999px;
+    padding: .15rem .55rem;
+  }
+  :global(.comparateur .lien-fiche:hover) { background: rgba(110, 231, 255, .1); }
 
   .comp-entete { display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem; }
   .comp-entete h3 { margin: 0; font-weight: 400; }
@@ -225,12 +231,14 @@ import { materiel } from "../data/materiel.js";
           <th></th>
           <th data-key="modele" class="${classeTri("modele")}" title="Trier par modèle"><span class="th-ligne">Modèle ${fleche("modele")}</span></th>
           ${cat.colonnes.map((c) => `<th data-key="${c.key}" class="${classeTri(c.key)}" title="Trier par ${c.label.toLowerCase()}"><span class="th-ligne">${c.label} ${fleche(c.key)}</span>${c.unite ? `<span class="unite">${c.unite}</span>` : ""}</th>`).join("")}
+          <th>Fiche</th>
         </tr></thead>
         <tbody>${lignes.map((r) => `
           <tr data-id="${r.id}" class="${etat.choix.has(r.id) ? "choisi" : ""}">
             <td><input type="checkbox" ${etat.choix.has(r.id) ? "checked" : ""} aria-label="Comparer ${r.marque} ${r.modele}"></td>
             <td><span class="nom-modele">${r.modele}</span><br><span class="nom-marque">${r.marque}</span></td>
             ${cat.colonnes.map((c) => `<td class="${c.num ? "num" : ""} ${r[c.key] == null ? "vide" : ""}">${afficher(r[c.key], c)}</td>`).join("")}
+            <td class="${r.fiche ? "" : "vide"}">${r.fiche ? `<a href="${r.fiche}" target="_blank" rel="noopener noreferrer" class="lien-fiche">PDF</a>` : "—"}</td>
           </tr>`).join("")}
         </tbody>`;
       $(".resume").textContent = `${lignes.length} modèle${lignes.length > 1 ? "s" : ""} sur ${cat.items.length}`;
@@ -273,6 +281,7 @@ import { materiel } from "../data/materiel.js";
           return `<tr><th scope="row">${entete(c)}</th>${choisis.map((r) =>
             `<td class="${c.num ? "num" : ""} ${r[c.key] == null ? "vide" : ""} ${m != null && r[c.key] === m ? "meilleur" : ""}">${afficher(r[c.key], c)}</td>`).join("")}</tr>`;
         }).join("")}
+        <tr><th scope="row">Fiche technique</th>${choisis.map((r) => `<td>${r.fiche ? `<a href="${r.fiche}" target="_blank" rel="noopener noreferrer" class="lien-fiche">Voir le PDF</a>` : "—"}</td>`).join("")}</tr>
         <tr><th scope="row"></th>${choisis.map((r) => `<td><button type="button" class="puce retirer" data-id="${r.id}">Retirer</button></td>`).join("")}</tr>
         </tbody>`;
       $(".table-comp").querySelectorAll(".retirer").forEach((b) => b.addEventListener("click", () => basculer(b.dataset.id)));
