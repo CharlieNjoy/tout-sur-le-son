@@ -1,0 +1,17 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Comparateur from "../../components/Comparateur.astro";
+---
+<Layout title="Comparateur" description="Comparer les caractéristiques de micros, casques, enceintes et préamplis">
+  <a href="/applications" class="retour muted">← Applications</a>
+  <h1>Comparateur</h1>
+  <p class="muted intro">Micros, casques, enceintes actives et préamplis : filtrer, trier, comparer côte à côte et visualiser.</p>
+
+  <Comparateur />
+
+  <style>
+    .retour { display: inline-block; margin-bottom: 1.5rem; text-decoration: none; font-size: .9rem; transition: color .2s; }
+    .retour:hover { color: var(--fg); }
+    .intro { margin: 0 0 2rem; }
+  </style>
+</Layout>

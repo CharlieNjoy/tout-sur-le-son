@@ -9,7 +9,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "maj-materiel": "node scripts/maj-materiel.mjs",
+    "publier": "node scripts/publier.mjs"
   },
   "dependencies": {
     "astro": "^7.4.7",

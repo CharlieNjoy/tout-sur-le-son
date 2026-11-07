@@ -1,0 +1,398 @@
+---
+// =====================================================================
+//  COMPARATEUR DE MATÉRIEL
+//  Données : src/data/materiel.js (tableur « SPEC équipement »)
+// =====================================================================
+import "../styles/applis.css";
+import { materiel } from "../data/materiel.js";
+---
+<div class="appli comparateur">
+  <!-- Données transmises au script -->
+  <script type="application/json" id="donnees-materiel" set:html={JSON.stringify(materiel)} />
+
+  <!-- Catégories -->
+  <div class="puces categories">
+    {materiel.map((c, i) => (
+      <button class={i === 0 ? "puce actif" : "puce"} data-cat={c.id}>
+        {c.nom} <span class="nb">{c.items.length}</span>
+      </button>
+    ))}
+  </div>
+
+  <!-- Filtres -->
+  <div class="filtres">
+    <input type="search" class="recherche" placeholder="Marque ou modèle…" />
+    <select class="marque"></select>
+    <span class="filtres-texte"></span>
+    <label class="prix">
+      <span class="nom">Prix max <strong class="val-prix">—</strong></span>
+      <input type="range" class="curseur-prix" min="0" max="1000" value="1000" />
+    </label>
+    <label class="complets">
+      <input type="checkbox" class="seulement-complets" />
+      <span>Masquer les fiches incomplètes</span>
+    </label>
+  </div>
+
+  <!-- Comparaison côte à côte -->
+  <section class="comparaison" hidden>
+    <div class="comp-entete">
+      <h3>Comparaison</h3>
+      <button type="button" class="puce vider">Tout désélectionner</button>
+    </div>
+    <div class="defile"><table class="table-comp"></table></div>
+    <p class="note">En bleu : la meilleure valeur de la sélection, quand « meilleur » a un sens (bruit plus bas, SPL max plus haut…).</p>
+  </section>
+
+  <!-- Graphique -->
+  <section class="graphique">
+    <div class="axes">
+      <label><span class="nom">Axe horizontal</span><select class="axe-x" data-neutre="non"></select></label>
+      <label><span class="nom">Axe vertical</span><select class="axe-y" data-neutre="non"></select></label>
+    </div>
+    <div class="ecran">
+      <canvas class="nuage"></canvas>
+      <div class="infobulle" hidden></div>
+    </div>
+    <p class="note">Survolez un point pour voir le modèle, cliquez pour l'ajouter à la comparaison. <span class="nb-points"></span></p>
+  </section>
+
+  <!-- Tableau -->
+  <p class="resume muted"></p>
+  <div class="defile"><table class="table"></table></div>
+  <p class="note">Cliquez sur ⇅ en haut d'une colonne pour classer (1er clic : la meilleure valeur en premier, 2e clic : l'inverse). Cochez jusqu'à 4 modèles pour les comparer. Valeurs constructeur : les méthodes de mesure diffèrent d'une marque à l'autre.</p>
+</div>
+
+<style>
+  .categories .nb { font-size: .75rem; opacity: .7; margin-left: .2rem; }
+
+  .filtres { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: end; }
+  .recherche {
+    font: inherit; font-size: .9rem; color: var(--fg); background: var(--bg);
+    padding: .5rem .9rem; border: 1px solid var(--line); border-radius: 999px;
+    flex: 1 1 200px;
+  }
+  .recherche:focus { outline: none; border-color: var(--accent); }
+  .filtres-texte { display: contents; }
+  .prix { min-width: 200px; flex: 1 1 200px; }
+  .complets { display: flex; align-items: center; gap: .5rem; font-size: .88rem; color: var(--muted); cursor: pointer; }
+
+
+  .defile { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+  :global(.comparateur th), :global(.comparateur td) { padding: .5rem .7rem; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  :global(.comparateur thead th) { position: sticky; top: 0; background: var(--bg); color: var(--muted); font-weight: 400; font-size: .78rem; }
+  :global(.comparateur .table th[data-key]) { cursor: pointer; user-select: none; }
+  :global(.comparateur .table th[data-key]:hover) { color: var(--fg); }
+  :global(.comparateur .table th.trie) { color: var(--accent); }
+  :global(.comparateur .th-ligne) { display: inline-flex; align-items: center; gap: .35rem; }
+  :global(.comparateur .icone-tri) { font-size: .7rem; opacity: .45; }
+  :global(.comparateur th.trie .icone-tri) { opacity: 1; }
+  :global(.comparateur .table th[data-key]:hover .icone-tri) { opacity: .9; }
+  :global(.comparateur .unite) { display: block; font-size: .7rem; opacity: .7; }
+  :global(.comparateur td.num) { text-align: right; font-variant-numeric: tabular-nums; }
+  :global(.comparateur td.vide) { color: var(--line); text-align: center; }
+  :global(.comparateur .table tbody tr:hover) { background: rgba(255, 255, 255, .03); }
+  :global(.comparateur .table tbody tr.choisi) { background: rgba(110, 231, 255, .07); }
+  :global(.comparateur .nom-modele) { font-weight: 500; }
+  :global(.comparateur .nom-marque) { color: var(--muted); font-size: .78rem; }
+  :global(.comparateur input[type="checkbox"]) { accent-color: var(--accent); }
+  :global(.comparateur td.meilleur) { color: var(--accent); font-weight: 600; }
+
+  .comp-entete { display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem; }
+  .comp-entete h3 { margin: 0; font-weight: 400; }
+  :global(.comparateur .table-comp th[scope="row"]) { color: var(--muted); font-weight: 400; }
+
+  .axes { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: .75rem; }
+  .axes label { display: grid; gap: .3rem; }
+  .nuage { height: 340px !important; }
+  .infobulle {
+    position: absolute; pointer-events: none; z-index: 2;
+    padding: .4rem .6rem; border-radius: 8px; font-size: .8rem; line-height: 1.4;
+    background: var(--fg); color: var(--bg); white-space: nowrap;
+  }
+</style>
+
+<script>
+  import { fmt, couleurs, preparerCanvas } from "../scripts/outils.js";
+  import { habiller } from "../scripts/menus.js";
+
+  const MAX_CHOIX = 4;
+  const PAR_DEFAUT = {                       // axes proposés au départ pour chaque catégorie
+    micros: ["prix", "bruit"], casques: ["prix", "sensibilite"],
+    enceintes: ["prix", "f3"], preamps: ["prix", "ein"],
+  };
+
+  document.querySelectorAll(".comparateur").forEach((racine) => {
+    const $ = (s) => racine.querySelector(s);
+    const donnees = JSON.parse($("#donnees-materiel").textContent);
+    const coul = couleurs();
+    const canvas = $(".nuage");
+    const ctx = preparerCanvas(canvas, () => dessinerGraphique());
+
+    const etat = { cat: donnees[0].id, tri: { key: "prix", sens: 1 }, choix: new Set(), filtresTexte: {}, points: [] };
+    const categorie = () => donnees.find((c) => c.id === etat.cat);
+    const colonne = (key) => categorie().colonnes.find((c) => c.key === key);
+
+    // ---------- Formatage ----------
+    const afficher = (v, c) => {
+      if (v == null) return "—";
+      if (!c?.num) return v;
+      return fmt(v, Math.abs(v) < 10 && !Number.isInteger(v) ? 2 : 1);
+    };
+    const entete = (c) => `${c.label}${c.unite ? `<span class="unite">${c.unite}</span>` : ""}`;
+
+    // ---------- Changement de catégorie ----------
+    function choisirCategorie(id) {
+      etat.cat = id;
+      etat.choix.clear();
+      etat.filtresTexte = {};
+      etat.tri = { key: "prix", sens: 1 };
+      racine.querySelectorAll("[data-cat]").forEach((b) => b.classList.toggle("actif", b.dataset.cat === id));
+      $(".recherche").value = "";
+
+      const cat = categorie();
+      // Liste des marques
+      const marques = [...new Set(cat.items.map((r) => r.marque))].sort((a, b) => a.localeCompare(b, "fr"));
+      $(".marque").innerHTML = `<option value="">Toutes les marques</option>` + marques.map((m) => `<option>${m}</option>`).join("");
+
+      // Un menu par colonne texte (capteur, directivité, ouverture…)
+      $(".filtres-texte").innerHTML = cat.colonnes.filter((c) => !c.num).map((c) => {
+        const valeurs = [...new Set(cat.items.map((r) => r[c.key]).filter(Boolean))].sort();
+        return `<select data-filtre="${c.key}"><option value="">${c.label} : tous</option>${valeurs.map((v) => `<option>${v}</option>`).join("")}</select>`;
+      }).join("");
+      $(".filtres-texte").querySelectorAll("select").forEach((s) =>
+        s.addEventListener("change", () => { etat.filtresTexte[s.dataset.filtre] = s.value; maj(); }));
+
+      // Curseur de prix : de 0 au prix maximum de la catégorie
+      const prixMax = Math.max(0, ...cat.items.map((r) => r.prix ?? 0));
+      $(".curseur-prix").max = Math.ceil(prixMax / 50) * 50 || 1000;
+      $(".curseur-prix").value = $(".curseur-prix").max;
+      $(".prix").hidden = prixMax === 0;
+
+      // Axes du graphique
+      const options = cat.colonnes.filter((c) => c.num).map((c) => `<option value="${c.key}">${c.label}${c.unite ? ` (${c.unite})` : ""}</option>`).join("");
+      $(".axe-x").innerHTML = options;
+      $(".axe-y").innerHTML = options;
+      const [x, y] = PAR_DEFAUT[id];
+      $(".axe-x").value = colonne(x) ? x : cat.colonnes.find((c) => c.num)?.key;
+      $(".axe-y").value = colonne(y) ? y : cat.colonnes.filter((c) => c.num)[1]?.key;
+
+      // Menus au style du site (les axes ont toujours une valeur : pas de mise en évidence)
+      racine.querySelectorAll(".filtres select, .axes select").forEach(habiller);
+
+      maj();
+    }
+
+    // ---------- Filtrage et tri ----------
+    function lignesVisibles() {
+      const cat = categorie();
+      const q = $(".recherche").value.toLowerCase().trim();
+      const marque = $(".marque").value;
+      const prixMax = Number($(".curseur-prix").value);
+      const plafond = Number($(".curseur-prix").max);
+      const complets = $(".seulement-complets").checked;
+      const nums = cat.colonnes.filter((c) => c.num);
+
+      const lignes = cat.items.filter((r) => {
+        if (q && !`${r.marque} ${r.modele}`.toLowerCase().includes(q)) return false;
+        if (marque && r.marque !== marque) return false;
+        if (prixMax < plafond && (r.prix == null || r.prix > prixMax)) return false;
+        for (const [k, v] of Object.entries(etat.filtresTexte)) if (v && r[k] !== v) return false;
+        if (complets && nums.filter((c) => r[c.key] == null).length > nums.length / 2) return false;
+        return true;
+      });
+
+      const { key, sens } = etat.tri;
+      const c = colonne(key);
+      return lignes.sort((a, b) => {
+        const va = a[key], vb = b[key];
+        if (va == null && vb == null) return 0;
+        if (va == null) return 1;               // les valeurs manquantes toujours à la fin
+        if (vb == null) return -1;
+        return (c?.num ? va - vb : String(va).localeCompare(String(vb), "fr")) * sens;
+      });
+    }
+
+    // ---------- Tableau principal ----------
+    function dessinerTableau(lignes) {
+      const cat = categorie();
+      // Icône de tri en haut de chaque colonne : ⇅ (non trié), ▲ croissant, ▼ décroissant
+      const fleche = (k) => `<span class="icone-tri" aria-hidden="true">${etat.tri.key === k ? (etat.tri.sens > 0 ? "▲" : "▼") : "⇅"}</span>`;
+      const classeTri = (k) => (etat.tri.key === k ? "trie" : "");
+      $(".table").innerHTML = `
+        <thead><tr>
+          <th></th>
+          <th data-key="modele" class="${classeTri("modele")}" title="Trier par modèle"><span class="th-ligne">Modèle ${fleche("modele")}</span></th>
+          ${cat.colonnes.map((c) => `<th data-key="${c.key}" class="${classeTri(c.key)}" title="Trier par ${c.label.toLowerCase()}"><span class="th-ligne">${c.label} ${fleche(c.key)}</span>${c.unite ? `<span class="unite">${c.unite}</span>` : ""}</th>`).join("")}
+        </tr></thead>
+        <tbody>${lignes.map((r) => `
+          <tr data-id="${r.id}" class="${etat.choix.has(r.id) ? "choisi" : ""}">
+            <td><input type="checkbox" ${etat.choix.has(r.id) ? "checked" : ""} aria-label="Comparer ${r.marque} ${r.modele}"></td>
+            <td><span class="nom-modele">${r.modele}</span><br><span class="nom-marque">${r.marque}</span></td>
+            ${cat.colonnes.map((c) => `<td class="${c.num ? "num" : ""} ${r[c.key] == null ? "vide" : ""}">${afficher(r[c.key], c)}</td>`).join("")}
+          </tr>`).join("")}
+        </tbody>`;
+      $(".resume").textContent = `${lignes.length} modèle${lignes.length > 1 ? "s" : ""} sur ${cat.items.length}`;
+
+      $(".table").querySelectorAll("th[data-key]").forEach((th) =>
+        th.addEventListener("click", () => {
+          const k = th.dataset.key;
+          // 1er clic : la « meilleure » valeur en premier (ex. SPL max du plus grand au plus petit)
+          const sensInitial = colonne(k)?.mieux === "haut" ? -1 : 1;
+          etat.tri = { key: k, sens: etat.tri.key === k ? -etat.tri.sens : sensInitial };
+          maj();
+        }));
+      $(".table").querySelectorAll("tbody tr").forEach((tr) =>
+        tr.querySelector("input").addEventListener("change", () => basculer(tr.dataset.id)));
+    }
+
+    function basculer(id) {
+      if (etat.choix.has(id)) etat.choix.delete(id);
+      else if (etat.choix.size < MAX_CHOIX) etat.choix.add(id);
+      maj();
+    }
+
+    // ---------- Comparaison côte à côte ----------
+    function dessinerComparaison() {
+      const cat = categorie();
+      const choisis = cat.items.filter((r) => etat.choix.has(r.id));
+      $(".comparaison").hidden = choisis.length === 0;
+      if (!choisis.length) return;
+
+      const meilleur = (c) => {
+        if (!c.mieux || choisis.length < 2) return null;
+        const vals = choisis.map((r) => r[c.key]).filter((v) => v != null);
+        if (vals.length < 2 || Math.min(...vals) === Math.max(...vals)) return null;   // égalité : pas de gagnant
+        return c.mieux === "haut" ? Math.max(...vals) : Math.min(...vals);
+      };
+      $(".table-comp").innerHTML = `
+        <thead><tr><th></th>${choisis.map((r) => `<th><span class="nom-modele">${r.modele}</span><br><span class="nom-marque">${r.marque}</span></th>`).join("")}</tr></thead>
+        <tbody>${cat.colonnes.map((c) => {
+          const m = meilleur(c);
+          return `<tr><th scope="row">${entete(c)}</th>${choisis.map((r) =>
+            `<td class="${c.num ? "num" : ""} ${r[c.key] == null ? "vide" : ""} ${m != null && r[c.key] === m ? "meilleur" : ""}">${afficher(r[c.key], c)}</td>`).join("")}</tr>`;
+        }).join("")}
+        <tr><th scope="row"></th>${choisis.map((r) => `<td><button type="button" class="puce retirer" data-id="${r.id}">Retirer</button></td>`).join("")}</tr>
+        </tbody>`;
+      $(".table-comp").querySelectorAll(".retirer").forEach((b) => b.addEventListener("click", () => basculer(b.dataset.id)));
+    }
+
+    // ---------- Nuage de points ----------
+    function dessinerGraphique(lignes = lignesVisibles()) {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+      const cx = colonne($(".axe-x").value), cy = colonne($(".axe-y").value);
+      if (!cx || !cy) return;
+
+      const pts = lignes.filter((r) => r[cx.key] != null && r[cy.key] != null && (!cx.log || r[cx.key] > 0) && (!cy.log || r[cy.key] > 0));
+      $(".nb-points").textContent = `(${pts.length} modèle${pts.length > 1 ? "s" : ""} avec les deux valeurs)`;
+
+      const marge = { g: 56, d: 16, h: 16, b: 44 };
+      const echelle = (c, vals, a, b) => {
+        let mn = Math.min(...vals), mx = Math.max(...vals);
+        if (c.log) { mn = Math.log10(mn); mx = Math.log10(mx); }
+        if (mn === mx) { mn -= 1; mx += 1; }
+        const pad = (mx - mn) * 0.08; mn -= pad; mx += pad;
+        const f = (v) => a + ((c.log ? Math.log10(v) : v) - mn) / (mx - mn) * (b - a);
+        return { f, mn, mx };
+      };
+      if (!pts.length) {
+        ctx.fillStyle = coul.gris; ctx.font = "13px system-ui"; ctx.textAlign = "center";
+        ctx.fillText("Aucun modèle n'a ces deux valeurs renseignées.", w / 2, h / 2);
+        etat.points = [];
+        return;
+      }
+      const ex = echelle(cx, pts.map((r) => r[cx.key]), marge.g, w - marge.d);
+      const ey = echelle(cy, pts.map((r) => r[cy.key]), h - marge.b, marge.h);
+
+      // Grille et graduations « rondes » : 1-2-5 par décade en log, pas régulier sinon
+      const reperes = (c, e) => {
+        const [a, b] = c.log ? [10 ** e.mn, 10 ** e.mx] : [e.mn, e.mx];
+        if (c.log) {
+          const res = [];
+          for (let d = Math.floor(Math.log10(a)); d <= Math.ceil(Math.log10(b)); d++)
+            for (const m of [1, 2, 5]) { const v = m * 10 ** d; if (v >= a && v <= b) res.push(v); }
+          if (res.length >= 3) return res;   // plage étroite : on passe aux repères réguliers ci-dessous
+        }
+        const brut = (b - a) / 5, p = 10 ** Math.floor(Math.log10(brut));
+        const pas = [1, 2, 2.5, 5, 10].map((m) => m * p).find((v) => v >= brut);
+        const res = [];
+        for (let v = Math.ceil(a / pas) * pas; v <= b + 1e-9; v += pas) res.push(+v.toFixed(6));
+        return res;
+      };
+      const etiquette = (v) => fmt(v, Math.abs(v) < 10 && !Number.isInteger(v) ? 1 : 0);
+      ctx.strokeStyle = coul.ligne; ctx.fillStyle = coul.gris; ctx.font = "11px system-ui"; ctx.lineWidth = 1;
+      for (const v of reperes(cx, ex)) {
+        const x = ex.f(v);
+        ctx.beginPath(); ctx.moveTo(x, marge.h); ctx.lineTo(x, h - marge.b); ctx.stroke();
+        ctx.textAlign = "center"; ctx.fillText(etiquette(v), x, h - marge.b + 14);
+      }
+      for (const v of reperes(cy, ey)) {
+        const y = ey.f(v);
+        ctx.beginPath(); ctx.moveTo(marge.g, y); ctx.lineTo(w - marge.d, y); ctx.stroke();
+        ctx.textAlign = "right"; ctx.fillText(etiquette(v), marge.g - 6, y + 4);
+      }
+      ctx.textAlign = "center";
+      ctx.fillText(`${cx.label}${cx.unite ? ` (${cx.unite})` : ""}${cx.log ? " · log" : ""}`, (marge.g + w - marge.d) / 2, h - 8);
+      ctx.save(); ctx.translate(13, (marge.h + h - marge.b) / 2); ctx.rotate(-Math.PI / 2);
+      ctx.fillText(`${cy.label}${cy.unite ? ` (${cy.unite})` : ""}${cy.log ? " · log" : ""}`, 0, 0); ctx.restore();
+
+      // Points (les modèles sélectionnés par-dessus, plus gros)
+      etat.points = pts.map((r) => ({ r, x: ex.f(r[cx.key]), y: ey.f(r[cy.key]) }));
+      const ordre = [...etat.points].sort((a, b) => etat.choix.has(a.r.id) - etat.choix.has(b.r.id));
+      for (const p of ordre) {
+        const choisi = etat.choix.has(p.r.id);
+        ctx.beginPath(); ctx.arc(p.x, p.y, choisi ? 6 : 4, 0, 2 * Math.PI);
+        ctx.fillStyle = choisi ? coul.accent : "rgba(110, 231, 255, .45)";
+        ctx.fill();
+        if (choisi) {
+          ctx.fillStyle = coul.texte; ctx.textAlign = "left"; ctx.font = "11px system-ui";
+          ctx.fillText(p.r.modele, p.x + 8, p.y - 6);
+        }
+      }
+    }
+
+    // Point le plus proche du curseur (rayon 12 px)
+    const pointSous = (e) => {
+      const r = canvas.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+      let best = null, d = 144;
+      for (const p of etat.points) { const dd = (p.x - mx) ** 2 + (p.y - my) ** 2; if (dd < d) { d = dd; best = p; } }
+      return best;
+    };
+    canvas.addEventListener("mousemove", (e) => {
+      const p = pointSous(e), bulle = $(".infobulle");
+      canvas.style.cursor = p ? "pointer" : "default";
+      if (!p) { bulle.hidden = true; return; }
+      const cx = colonne($(".axe-x").value), cy = colonne($(".axe-y").value);
+      bulle.innerHTML = `<strong>${p.r.marque} ${p.r.modele}</strong><br>${cx.label} : ${afficher(p.r[cx.key], cx)} ${cx.unite ?? ""}<br>${cy.label} : ${afficher(p.r[cy.key], cy)} ${cy.unite ?? ""}`;
+      bulle.hidden = false;
+      const gauche = Math.min(p.x + 12, canvas.clientWidth - bulle.offsetWidth - 4);
+      bulle.style.left = `${Math.max(4, gauche)}px`;
+      bulle.style.top = `${Math.max(4, p.y - bulle.offsetHeight - 10)}px`;
+    });
+    canvas.addEventListener("mouseleave", () => ($(".infobulle").hidden = true));
+    canvas.addEventListener("click", (e) => { const p = pointSous(e); if (p) basculer(p.r.id); });
+
+    // ---------- Mise à jour générale ----------
+    function maj() {
+      const prix = Number($(".curseur-prix").value), plafond = Number($(".curseur-prix").max);
+      $(".val-prix").textContent = prix >= plafond ? "aucun" : `${fmt(prix)} €`;
+      const lignes = lignesVisibles();
+      dessinerTableau(lignes);
+      dessinerComparaison();
+      dessinerGraphique(lignes);
+    }
+
+    racine.querySelectorAll("[data-cat]").forEach((b) => b.addEventListener("click", () => choisirCategorie(b.dataset.cat)));
+    $(".recherche").addEventListener("input", maj);
+    $(".marque").addEventListener("change", maj);
+    $(".curseur-prix").addEventListener("input", maj);
+    $(".seulement-complets").addEventListener("change", maj);
+    $(".axe-x").addEventListener("change", () => dessinerGraphique());
+    $(".axe-y").addEventListener("change", () => dessinerGraphique());
+    $(".vider").addEventListener("click", () => { etat.choix.clear(); maj(); });
+
+    choisirCategorie(etat.cat);
+  });
+</script>

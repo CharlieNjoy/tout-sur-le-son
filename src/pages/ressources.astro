@@ -1,8 +1,237 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { categories, playlist, TYPES } from "../data/ressources.js";
+
+const total = categories.reduce((n, c) => n + c.items.length, 0);
 ---
-<Layout title="Ressources" description="Ressources et références sur le son">
+<Layout title="Ressources" description="Sites, chaînes, logiciels et applications autour du son, classés par thème">
   <h1>Ressources</h1>
-  <p class="muted">Documents, références et outils à consulter.</p>
-  <p class="muted">Bientôt disponible.</p>
+  <p class="muted intro">{total} sites, chaînes, logiciels et applications autour du son, classés par thème.</p>
+
+  <!-- ===== PLAYLIST MISE EN AVANT ===== -->
+  <a class="playlist" href={playlist.url} target="_blank" rel="noopener noreferrer">
+    <span class="playlist-icone" aria-hidden="true">▶</span>
+    <span>
+      <span class="playlist-nom">{playlist.nom}</span>
+      <span class="playlist-desc">{playlist.desc}</span>
+    </span>
+    <span class="playlist-fleche" aria-hidden="true">↗</span>
+  </a>
+
+  <!-- ===== FILTRES ===== -->
+  <div class="filtres">
+    <div class="filtres-ligne">
+      <label class="interrupteur">
+        <input type="checkbox" id="anglais" checked />
+        <span class="piste"><span class="bouton"></span></span>
+        <span>Sites et chaînes en anglais</span>
+      </label>
+      <div class="tout">
+        <button type="button" id="tout-ouvrir">Tout ouvrir</button>
+        <button type="button" id="tout-fermer">Tout fermer</button>
+      </div>
+    </div>
+    <input type="search" id="recherche" placeholder="Rechercher (ex. : mesure, LUFS, modes de pièce…)" />
+  </div>
+
+  <p id="aucun" class="muted" hidden>Aucune ressource ne correspond.</p>
+
+  <!-- ===== CATÉGORIES (repliables) ===== -->
+  {categories.map((c) => (
+    <details class="categorie" id={c.id}>
+      <summary>
+        <span class="cat-titre">{c.titre}</span>
+        <span class="compte"></span>
+        <span class="chevron" aria-hidden="true"></span>
+      </summary>
+      <p class="muted cat-intro">{c.intro}</p>
+      <div class="grille">
+        {c.items.map((r) => {
+          const contenu = (
+            <>
+              <span class="ligne">
+                <span class="nom">{r.nom}</span>
+                <span class={`langue ${r.langue}`}>{r.langue.toUpperCase()}</span>
+              </span>
+              <span class={`type ${r.type}`}>{TYPES[r.type]}</span>
+              {r.desc && <span class="desc">{r.desc}</span>}
+              {r.mots?.length > 0 && (
+                <span class="mots">{r.mots.map((m) => <span class="mot">{m}</span>)}</span>
+              )}
+              {!r.url && <span class="sans-lien">Lien à compléter</span>}
+            </>
+          );
+          const attrs = {
+            "data-langue": r.langue,
+            "data-type": r.type,
+            "data-texte": `${r.nom} ${r.desc} ${(r.mots || []).join(" ")} ${TYPES[r.type]} ${c.titre}`,
+          };
+          return r.url ? (
+            <a class="ressource" href={r.url} target="_blank" rel="noopener noreferrer" {...attrs}>{contenu}</a>
+          ) : (
+            <div class="ressource" {...attrs}>{contenu}</div>
+          );
+        })}
+      </div>
+    </details>
+  ))}
+
+  <!-- ===== RETOUR EN HAUT ===== -->
+  <button type="button" id="haut" aria-label="Revenir en haut de la page" hidden>↑</button>
+
+  <style>
+    .intro { margin: 0 0 1.5rem; }
+
+    /* ----- Playlist ----- */
+    .playlist {
+      display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: center;
+      padding: 1.1rem 1.25rem; margin-bottom: 1.5rem;
+      border: 1px solid var(--accent); border-radius: 14px;
+      background: rgba(110, 231, 255, .06); text-decoration: none; color: var(--fg);
+      transition: background .2s;
+    }
+    .playlist:hover { background: rgba(110, 231, 255, .12); }
+    .playlist-icone {
+      width: 2.5rem; height: 2.5rem; border-radius: 50%; display: grid; place-content: center;
+      background: var(--accent); color: var(--bg); font-size: .9rem; padding-left: .15rem;
+    }
+    .playlist-nom { display: block; font-size: 1.05rem; }
+    .playlist-desc { display: block; color: var(--muted); font-size: .88rem; line-height: 1.5; margin-top: .15rem; }
+    .playlist-fleche { color: var(--accent); }
+
+    /* ----- Filtres (collants en haut au défilement) ----- */
+    .filtres {
+      position: sticky; top: 0; z-index: 5;
+      display: grid; gap: .7rem; padding: .8rem 0;
+      background: var(--bg); border-bottom: 1px solid var(--line);
+    }
+    .filtres-ligne { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: space-between; align-items: center; }
+    .interrupteur { display: inline-flex; align-items: center; gap: .65rem; cursor: pointer; font-size: .92rem; }
+    .interrupteur input { position: absolute; opacity: 0; pointer-events: none; }
+    .piste { position: relative; width: 2.5rem; height: 1.35rem; border-radius: 999px; background: var(--line); transition: background .2s; }
+    .bouton { position: absolute; top: .18rem; left: .18rem; width: 1rem; height: 1rem; border-radius: 50%; background: var(--fg); transition: transform .2s; }
+    .interrupteur input:checked + .piste { background: var(--accent); }
+    .interrupteur input:checked + .piste .bouton { transform: translateX(1.15rem); background: var(--bg); }
+    .interrupteur input:focus-visible + .piste { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .tout { display: flex; gap: .4rem; }
+    .tout button {
+      font: inherit; font-size: .8rem; cursor: pointer; color: var(--muted); background: none;
+      padding: .3rem .75rem; border: 1px solid var(--line); border-radius: 999px; transition: border-color .2s, color .2s;
+    }
+    .tout button:hover { border-color: var(--accent); color: var(--fg); }
+
+    #recherche {
+      font: inherit; font-size: .92rem; color: var(--fg); background: none;
+      padding: .55rem .9rem; border: 1px solid var(--line); border-radius: 10px;
+    }
+    #recherche:focus { outline: none; border-color: var(--accent); }
+
+    /* ----- Catégories repliables ----- */
+    .categorie { border-bottom: 1px solid var(--line); scroll-margin-top: 7rem; }
+    summary {
+      list-style: none; cursor: pointer; display: flex; align-items: center; gap: .5rem;
+      padding: 1.1rem 0; font-size: 1.2rem;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary:hover .cat-titre { color: var(--accent); }
+    .cat-titre { transition: color .2s; }
+    .compte { font-size: .85rem; color: var(--muted); }
+    .chevron {
+      margin-left: auto; width: .55rem; height: .55rem;
+      border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+      transform: rotate(45deg); transition: transform .2s;
+    }
+    details[open] .chevron { transform: rotate(225deg); }
+    .cat-intro { margin: -.4rem 0 1rem; font-size: .9rem; }
+
+    /* ----- Cartes ----- */
+    .grille { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); padding-bottom: 1.5rem; }
+    .ressource {
+      display: flex; flex-direction: column; gap: .35rem;
+      padding: .8rem .95rem; border: 1px solid var(--line); border-radius: 10px;
+      text-decoration: none; color: var(--fg); transition: border-color .2s, box-shadow .2s;
+    }
+    a.ressource:hover { border-color: var(--accent); box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+    .ligne { display: flex; justify-content: space-between; align-items: start; gap: .5rem; }
+    .nom { font-size: .95rem; line-height: 1.3; }
+    .langue {
+      flex-shrink: 0; font-size: .65rem; letter-spacing: .05em;
+      padding: .05rem .35rem; border-radius: 5px; border: 1px solid var(--line); color: var(--muted);
+    }
+    .langue.fr { color: var(--accent); border-color: rgba(110, 231, 255, .4); }
+    .type { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+    .type.logiciel { color: #b48cff; }
+    .type.appli { color: #6fdc8c; }
+    .type.youtube { color: #ff6b5a; }
+    .desc { color: var(--muted); font-size: .84rem; line-height: 1.45; }
+    .mots { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: auto; padding-top: .3rem; }
+    .mot { font-size: .7rem; color: var(--muted); padding: .05rem .4rem; border-radius: 5px; background: rgba(255, 255, 255, .05); }
+    .sans-lien { font-size: .75rem; color: var(--muted); font-style: italic; }
+
+    /* ----- Retour en haut ----- */
+    #haut {
+      position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 10;
+      width: 2.75rem; height: 2.75rem; border-radius: 50%; cursor: pointer;
+      font-size: 1.2rem; color: var(--bg); background: var(--accent); border: none;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, .4); transition: transform .2s;
+    }
+    #haut:hover { transform: translateY(-2px); }
+  </style>
+
+  <script>
+    const caseAnglais = document.getElementById("anglais");
+    const recherche = document.getElementById("recherche");
+    const sections = [...document.querySelectorAll(".categorie")];
+    const haut = document.getElementById("haut");
+
+    // Préférence mémorisée dans ce navigateur (sans effet si le stockage est bloqué)
+    try {
+      const memo = localStorage.getItem("ressources-anglais");
+      if (memo !== null) caseAnglais.checked = memo === "1";
+    } catch (e) {}
+
+    // Recherche insensible aux accents et aux majuscules
+    const normaliser = (t) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    sections.forEach((s) => s.querySelectorAll(".ressource").forEach((r) => (r.dataset.texte = normaliser(r.dataset.texte))));
+
+    function filtrer() {
+      const anglais = caseAnglais.checked;
+      const mots = normaliser(recherche.value).split(/\s+/).filter(Boolean);
+      let total = 0;
+
+      sections.forEach((cat) => {
+        let visibles = 0;
+        cat.querySelectorAll(".ressource").forEach((r) => {
+          // Les logiciels et les applis restent visibles quelle que soit la langue
+          const langueOk = anglais || r.dataset.langue === "fr" || r.dataset.type === "logiciel" || r.dataset.type === "appli";
+          const ok = langueOk && mots.every((m) => r.dataset.texte.includes(m));
+          r.hidden = !ok;
+          if (ok) visibles++;
+        });
+        cat.hidden = visibles === 0;
+        cat.querySelector(".compte").textContent = `(${visibles})`;
+        if (mots.length) cat.open = visibles > 0;   // pendant une recherche, on ouvre ce qui correspond
+        total += visibles;
+      });
+      document.getElementById("aucun").hidden = total > 0;
+    }
+
+    caseAnglais.addEventListener("change", () => {
+      try { localStorage.setItem("ressources-anglais", caseAnglais.checked ? "1" : "0"); } catch (e) {}
+      filtrer();
+    });
+    recherche.addEventListener("input", () => {
+      filtrer();
+      if (!recherche.value) sections.forEach((s) => (s.open = false));   // recherche effacée → on referme
+    });
+    document.getElementById("tout-ouvrir").addEventListener("click", () => sections.forEach((s) => (s.open = true)));
+    document.getElementById("tout-fermer").addEventListener("click", () => sections.forEach((s) => (s.open = false)));
+
+    // Bouton « haut de page » : visible après un peu de défilement
+    addEventListener("scroll", () => (haut.hidden = scrollY < 500), { passive: true });
+    haut.addEventListener("click", () => scrollTo({ top: 0, behavior: "smooth" }));
+
+    filtrer();
+  </script>
 </Layout>
