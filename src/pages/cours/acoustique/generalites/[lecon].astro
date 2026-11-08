@@ -1,0 +1,44 @@
+---
+import { getCollection, render } from "astro:content";
+import Layout from "../../../../layouts/Layout.astro";
+import LeconHeader from "../../../../components/LeconHeader.astro";
+import ReferencesLecon from "../../../../components/lecons/ReferencesLecon.astro";
+import { chapitres } from "../../../../data/lecons.js";
+
+const chapitre = chapitres.acoustique.generalites;
+const prefixe = `${chapitre.matiere}/${chapitre.chapitreSlug}/`;
+
+export async function getStaticPaths() {
+  const toutes = await getCollection("lecons");
+  const ici = toutes
+    .filter((e) => e.id.startsWith("acoustique/generalites/"))
+    .sort((a, b) => a.data.ordre - b.data.ordre);
+
+  return ici.map((entree, i) => ({
+    params: { lecon: entree.id.split("/").pop() },
+    props: { entree, precedent: ici[i - 1] ?? null, suivant: ici[i + 1] ?? null },
+  }));
+}
+
+const { entree, precedent, suivant } = Astro.props;
+const { Content } = await render(entree);
+
+const base = `/cours/${chapitre.matiere}/${chapitre.chapitreSlug}`;
+const urlDe = (e) => (e ? `${base}/${e.id.split("/").pop()}` : null);
+const numero = `${chapitre.numero}.${entree.data.ordre}`;
+---
+<Layout title={`${numero} ${entree.data.titre} — ${chapitre.titre}`}>
+  <LeconHeader
+    chapitreTitre={`Acoustique · Chapitre ${chapitre.numero} · ${chapitre.titre}`}
+    titre={`${numero} ${entree.data.titre}`}
+    precedent={urlDe(precedent)}
+    suivant={urlDe(suivant)}
+    retour="/cours"
+  />
+
+  <div class="prose corps-lecon">
+    <Content />
+  </div>
+
+  <ReferencesLecon liens={entree.data.references} />
+</Layout>

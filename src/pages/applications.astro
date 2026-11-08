@@ -1,32 +1,66 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-// Une ligne par application : ajoutez-en au fur et à mesure
-const applis = [
-  { titre: "Générateur", texte: "Signaux périodiques et bruits colorés, avec forme d'onde et spectre.", href: "/applications/generateur" },
-  { titre: "Synthèse additive", texte: "Construire un son harmonique par harmonique.", href: "/applications/synthese" },
-  { titre: "Battements", texte: "Deux fréquences proches qui pulsent ensemble.", href: "/applications/battements" },
-  { titre: "Oscilloscope micro", texte: "Forme d'onde et spectre en direct du micro.", href: "/applications/oscilloscope" },
-  { titre: "Comparateur", texte: "Micros, casques, enceintes et préamplis : caractéristiques côte à côte.", href: "/applications/comparateur" },
+// Une catégorie par grand thème ; une ligne par application dedans.
+const categories = [
+  {
+    titre: "Signaux",
+    applis: [
+      { titre: "Générateur", texte: "Signaux périodiques et bruits colorés, avec forme d'onde et spectre.", href: "/applications/generateur" },
+      { titre: "Synthèse additive", texte: "Construire un son harmonique par harmonique.", href: "/applications/synthese" },
+      { titre: "Battements", texte: "Deux fréquences proches qui pulsent ensemble.", href: "/applications/battements" },
+    ],
+  },
+  {
+    titre: "Équipements",
+    applis: [
+      { titre: "Oscilloscope micro", texte: "Forme d'onde et spectre en direct du micro.", href: "/applications/oscilloscope" },
+      { titre: "Comparateur", texte: "Micros, casques, enceintes et préamplis : caractéristiques côte à côte.", href: "/applications/comparateur" },
+    ],
+  },
+  {
+    titre: "Psychoacoustique",
+    applis: [
+      { titre: "Audiométrie relative", texte: "Votre seuil de perception par tiers d'octave, de 1 kHz à 20 kHz.", href: "/applications/audiometrie" },
+    ],
+  },
 ];
 ---
 <Layout title="Applications" description="Applications, jeux et exercices autour du son">
   <h1>Applications</h1>
   <p class="muted">Applications, jeux et exercices interactifs autour du son.</p>
 
-  <div class="grille">
-    {applis.map((a) => (
-      <a class="carte" href={a.href}>
-        <span class="titre">{a.titre}</span>
-        <span class="sous-titre">{a.texte}</span>
-        <span class="fleche">→</span>
-      </a>
-    ))}
-  </div>
+  {categories.map((cat) => (
+    <section class="categorie">
+      <h2>{cat.titre}</h2>
+      <div class="grille">
+        {cat.applis.map((a) => (
+          <a class="carte" href={a.href}>
+            <span class="titre">{a.titre}</span>
+            <span class="sous-titre">{a.texte}</span>
+            <span class="fleche">→</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  ))}
 
   <style>
+    .categorie { margin-top: 2.5rem; }
+    .categorie:first-of-type { margin-top: 2rem; }
+    .categorie h2 {
+      margin: 0 0 1.1rem;
+      font-size: .85rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--accent);
+      font-weight: 500;
+      padding-top: 1.1rem;
+      border-top: 1px solid var(--line);
+    }
+    .categorie:first-of-type h2 { border-top: none; padding-top: 0; }
     .grille {
-      display: grid; gap: 1.25rem; margin-top: 2rem;
+      display: grid; gap: 1.25rem;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     }
     .carte {

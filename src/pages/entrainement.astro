@@ -1,6 +1,5 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import EntrainementBTS from "../components/EntrainementBTS.astro";
 import { categories, TYPES } from "../data/ressources.js";
 
 // Catégories de ressources.js à mettre en avant ici comme compléments d'entraînement
@@ -8,21 +7,41 @@ const idsEntrainement = ["oreille", "audition", "quiz"];
 const categoriesEntrainement = idsEntrainement
   .map((id) => categories.find((c) => c.id === id))
   .filter(Boolean);
+
+// Les deux quiz (BTS et par classe) vivent chacun sur leur propre page.
+const quiz = [
+  {
+    href: "/entrainement/examen-bts",
+    titre: "Examen BTS",
+    desc: "Questions reprises des vraies annales officielles du BTS Métiers de l'Audiovisuel (2016-2025 + sujet zéro) : physique acoustique, technologie du son, électricité.",
+  },
+  {
+    href: "/entrainement/classes",
+    titre: "Entraînement par chapitre",
+    desc: "Questions classées par matière, chapitre et sous-chapitre, à trois niveaux cumulatifs (débutant, intermédiaire, confirmé), construites à partir des cours et des examens donnés en classe.",
+  },
+];
 ---
 <Layout title="Entraînement" description="Entraînement BTS Son (annales) et exercices d'oreille, de reconnaissance et de culture audio">
   <h1>Entraînement</h1>
-  <p class="muted intro">S'entraîner à partir des vraies annales du BTS Métiers de l'Audiovisuel, et affûter son oreille avec des exercices et quiz externes.</p>
+  <p class="muted intro">S'entraîner à partir des vraies annales du BTS Métiers de l'Audiovisuel et des examens donnés en classe, et affûter son oreille avec des exercices et quiz externes.</p>
 
-  <!-- ===== QUIZ BTS ===== -->
+  <!-- ===== QUIZ (liens vers pages dédiées) ===== -->
   <section class="bloc">
-    <h2>Entraînement BTS</h2>
-    <p class="muted bloc-intro">Questions reprises des sujets et corrigés officiels (2016-2025 et sujet zéro) : physique acoustique, technologie du son, électricité. Choisissez une matière et une année, ou lancez une série aléatoire.</p>
-    <EntrainementBTS />
+    <div class="grille-quiz">
+      {quiz.map((q) => (
+        <a class="carte-quiz" href={q.href}>
+          <h2>{q.titre}</h2>
+          <p class="muted">{q.desc}</p>
+          <span class="aller">Commencer →</span>
+        </a>
+      ))}
+    </div>
   </section>
 
   <!-- ===== RESSOURCES D'ENTRAÎNEMENT (menus repliables) ===== -->
-  {categoriesEntrainement.map((c, i) => (
-    <details class="bloc accordeon" open={i === 0}>
+  {categoriesEntrainement.map((c) => (
+    <details class="bloc accordeon">
       <summary>
         <h2>{c.titre}</h2>
         <span class="chevron" aria-hidden="true">⌄</span>
@@ -50,6 +69,17 @@ const categoriesEntrainement = idsEntrainement
     .bloc { margin-bottom: 3rem; }
     .bloc h2 { margin: 0; font-weight: 400; }
     .bloc-intro { margin: 1rem 0 1.25rem; font-size: .9rem; }
+
+    /* ----- Cartes quiz ----- */
+    .grille-quiz { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .carte-quiz {
+      display: grid; gap: .75rem; padding: 1.5rem; border: 1px solid var(--line); border-radius: 12px;
+      text-decoration: none; color: var(--fg); transition: border-color .2s, box-shadow .2s;
+    }
+    .carte-quiz:hover { border-color: var(--accent); box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+    .carte-quiz h2 { font-size: 1.15rem; }
+    .carte-quiz p { margin: 0; font-size: .9rem; line-height: 1.5; }
+    .carte-quiz .aller { font-size: .85rem; color: var(--accent); }
 
     /* ----- Accordéon ----- */
     .accordeon { border-top: 1px solid var(--line); padding-top: 1.25rem; }

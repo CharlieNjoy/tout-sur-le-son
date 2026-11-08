@@ -1,0 +1,44 @@
+---
+// Encart "Références" en bas d'une leçon : liens externes + description courte.
+// liens: [{ titre, url, description? }]
+const { liens = [] } = Astro.props;
+---
+{liens.length > 0 && (
+  <aside class="references">
+    <h2>Références</h2>
+    <ul>
+      {liens.map((l) => (
+        <li>
+          <a href={l.url} target="_blank" rel="noopener noreferrer">{l.titre}</a>
+          {l.description && <span class="desc"> — {l.description}</span>}
+        </li>
+      ))}
+    </ul>
+  </aside>
+)}
+
+<style>
+  .references {
+    margin-top: 1rem;
+    padding: 1.4rem 1.5rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .references h2 {
+    margin: 0 0 .75rem;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .references ul { margin: 0; padding-left: 1.1rem; }
+  .references li { padding: .3rem 0; line-height: 1.5; }
+  .references a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  .references a:hover { border-bottom-color: var(--accent); }
+  .desc { color: var(--muted); font-size: .92rem; }
+</style>

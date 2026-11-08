@@ -1,0 +1,21 @@
+---
+// Met un bloc de texte et une figure (image, schéma, échelle…) côte à côte.
+// Utilisable dans une leçon .mdx :
+// <TexteAvecFigure><NomDuComposant slot="figure" />texte ou markdown…</TexteAvecFigure>
+// Passe sous la figure en-dessous du texte sur petit écran.
+---
+<div class="texte-avec-figure">
+  <div class="texte"><slot /></div>
+  <div class="figure"><slot name="figure" /></div>
+</div>
+
+<style>
+  .texte-avec-figure { display: flex; gap: 2.5rem; align-items: flex-start; }
+  .texte { flex: 1 1 60%; min-width: 0; }
+  .figure { flex: 0 0 220px; }
+
+  @media (max-width: 720px) {
+    .texte-avec-figure { flex-direction: column; }
+    .figure { flex-basis: auto; width: 100%; max-width: 280px; margin: 0 auto; }
+  }
+</style>

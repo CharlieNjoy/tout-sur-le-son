@@ -47,7 +47,7 @@ export const questions = [
     choix: ["104 dB SPL", "110 dB SPL", "117 dB SPL", "91 dB SPL"],
     correct: 0,
     explication: "Atténuation géométrique sphérique : L(r) = L(1 m) − 20·log(r) = 130 − 20·log(20) ≈ 104 dB SPL.",
-    source: "BTS Son 2016, Partie 2 — Physique, exercice Acoustique",
+    source: "BTS Son 2016, sujet, Partie 1 — Technique des Équipements et Supports, § Situations de prise de son, question 1.5 (grandeur intermédiaire du calcul menant à Nsmicro = −28 dBu)",
     verifie: true,
   },
   {
@@ -403,7 +403,7 @@ export const questions = [
   },
   {
     id: "te-2024-3", option: "son", annee: "2024", matiere: "technologie",
-    question: "Sujet 2024 : une liaison MADI par fibre optique transporte un débit brut de 1,25 Gbit/s codé en 8B/10B. Quel est le débit utile réellement disponible pour les données ?",
+    question: "Sujet 2024 : une liaison par fibre optique multimode (transmission vidéo entre le plateau et le nodal) transporte un débit brut de 1,25 Gbit/s codé en 8B/10B. Quel est le débit utile réellement disponible pour les données ?",
     choix: ["1 Gbit/s", "1,25 Gbit/s", "0,8 Gbit/s", "1,56 Gbit/s"],
     correct: 0,
     explication: "Le codage 8B/10B n'utilise que 8 bits utiles sur 10 transmis : débit utile = 1,25 × 8/10 = 1 Gbit/s.",
@@ -461,7 +461,7 @@ export const questions = [
     choix: ["≈ 1,9 ns", "≈ 19 ns", "≈ 196 ns", "≈ 0,19 ns"],
     correct: 0,
     explication: "t0 = L·nc/c ≈ 196,9 ns ; tm = t0·nc/ng ≈ 198,8 ns ; Δt = tm−t0 ≈ 1,9 ns.",
-    source: "BTS Son 2024, sujet, Partie 2, exercice 5, questions 5.2-5.3",
+    source: "BTS Son 2024, sujet, Partie 2, exercice 5, questions 5.2-5.4",
     verifie: false,
   },
   {
@@ -585,12 +585,12 @@ export const questions = [
     verifie: false,
   },
   {
-    id: "el-2021-2", option: "son", annee: "2021", matiere: "electricite",
-    question: "Dans le formulaire officiel BTS Son, quelle est la tension efficace de référence utilisée pour exprimer un niveau en dBu ?",
+    id: "el-2022-2", option: "son", annee: "2022", matiere: "electricite",
+    question: "Dans le formulaire officiel BTS Son 2022, quelle est la tension efficace de référence utilisée pour exprimer un niveau en dBu ?",
     choix: ["0,775 V", "1 V", "0,5 V", "2 V"],
     correct: 0,
     explication: "Standard professionnel : 0 dBu = 0,775 V (soit 1 mW sur 600 Ω).",
-    source: "BTS Son, formulaire de physique (2020-2022)",
+    source: "BTS Son 2022, sujet, formulaire de physique",
     verifie: false,
   },
   {

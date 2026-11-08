@@ -1,0 +1,124 @@
+---
+// En-tête collante d'une page de leçon : nom du chapitre + du sous-chapitre,
+// avec des flèches gauche/droite pour naviguer entre sous-chapitres.
+// Reste visible en haut pendant le défilement du contenu (position: sticky).
+const { chapitreTitre, titre, precedent = null, suivant = null, retour } = Astro.props;
+---
+<header class="entete-lecon">
+  <a href={retour} class="retour-sommaire">← Sommaire</a>
+
+  <div class="barre-titre">
+    {precedent ? (
+      <a href={precedent} class="fleche gauche" aria-label="Sous-chapitre précédent">‹</a>
+    ) : (
+      <span class="fleche gauche desactive" aria-hidden="true">‹</span>
+    )}
+
+    <div class="titres">
+      <p class="chapitre-nom">{chapitreTitre}</p>
+      <h1 class="sous-chapitre-nom">{titre}</h1>
+    </div>
+
+    {suivant ? (
+      <a href={suivant} class="fleche droite" aria-label="Sous-chapitre suivant">›</a>
+    ) : (
+      <span class="fleche droite desactive" aria-hidden="true">›</span>
+    )}
+  </div>
+</header>
+
+<button class="remonter" aria-label="Remonter en haut" title="Remonter en haut">↑</button>
+
+<style>
+  .entete-lecon {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    margin: -4rem -1.5rem 2.5rem;
+    padding: .85rem 1.5rem .9rem;
+  }
+
+  .retour-sommaire {
+    display: block;
+    width: fit-content;
+    margin: 0 auto .6rem;
+    font-size: .8rem;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color .2s;
+  }
+  .retour-sommaire:hover { color: var(--fg); }
+
+  .barre-titre {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(.6rem, 3vw, 1.5rem);
+  }
+
+  .titres { text-align: center; min-width: 0; }
+  .chapitre-nom {
+    margin: 0 0 .15rem;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--accent);
+  }
+  .sous-chapitre-nom {
+    margin: 0;
+    font-size: clamp(1.05rem, 3.2vw, 1.5rem);
+    font-weight: 400;
+    line-height: 1.25;
+  }
+
+  .fleche {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 2.3rem;
+    height: 2.3rem;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    color: var(--fg);
+    font-size: 1.3rem;
+    text-decoration: none;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  a.fleche:hover { border-color: var(--accent); color: var(--accent); background: rgba(110, 231, 255, .08); }
+  .fleche.desactive { color: var(--muted); opacity: .35; }
+
+  .remonter {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 30;
+    display: grid;
+    place-items: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 1.2rem;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(.5rem);
+    transition: opacity .2s, transform .2s, border-color .2s, color .2s;
+  }
+  .remonter.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .remonter:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+
+<script>
+  document.querySelectorAll(".remonter").forEach((bouton) => {
+    const auDela = () => window.scrollY > 500;
+    const maj = () => bouton.classList.toggle("visible", auDela());
+    window.addEventListener("scroll", maj, { passive: true });
+    maj();
+    bouton.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  });
+</script>

@@ -1,0 +1,18 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import EntrainementBTS from "../../components/EntrainementBTS.astro";
+---
+<Layout title="Examen BTS" description="Entraînement aux épreuves officielles du BTS Métiers de l'Audiovisuel, à partir des vraies annales (sujets et corrigés 2016-2025 + sujet zéro)">
+  <p class="fil-ariane"><a href="/entrainement">← Entraînement</a></p>
+  <h1>Examen BTS</h1>
+  <p class="muted intro">Questions reprises des sujets et corrigés officiels (2016-2025 et sujet zéro) : physique acoustique, technologie du son, électricité. Choisissez une option, une matière et une année, ou lancez une série aléatoire.</p>
+
+  <EntrainementBTS />
+
+  <style>
+    .fil-ariane { margin: 0 0 1.5rem; font-size: .85rem; }
+    .fil-ariane a { color: var(--muted); text-decoration: none; }
+    .fil-ariane a:hover { color: var(--accent); }
+    .intro { margin: 0 0 2.5rem; }
+  </style>
+</Layout>

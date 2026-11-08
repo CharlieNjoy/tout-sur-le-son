@@ -1,0 +1,33 @@
+---
+// Échelle à bandes (ex. infrasons / audibles / ultrasons), utilisable dans une leçon .mdx :
+// <Echelle /> (bandes par défaut) ou <Echelle bandes={[{ classe, label, sousLabel, taille }]} />
+const {
+  bandes = [
+    { classe: "discret", label: "Infrasons", sousLabel: "< 20 Hz", taille: 0.6 },
+    { classe: "accent", label: "Sons audibles", sousLabel: "20 Hz – 20 kHz", taille: 2 },
+    { classe: "discret", label: "Ultrasons", sousLabel: "> 20 kHz", taille: 0.6 },
+  ],
+} = Astro.props;
+---
+<div class="echelle">
+  {bandes.map((b) => (
+    <div class={`segment ${b.classe}`} style={{ flex: b.taille ?? 1 }}>
+      <span>{b.label}</span>
+      <small>{b.sousLabel}</small>
+    </div>
+  ))}
+</div>
+
+<style>
+  .echelle { display: flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .segment {
+    display: grid; gap: .2rem; place-content: center; text-align: center;
+    padding: 1.1rem .5rem; border-right: 1px solid var(--line);
+  }
+  .segment:last-child { border-right: none; }
+  .segment span { font-size: .9rem; }
+  .segment small { color: var(--muted); font-size: .78rem; }
+  .segment.discret { background: rgba(154, 154, 162, .05); }
+  .segment.accent { background: rgba(110, 231, 255, .08); }
+  .segment.accent span { color: var(--accent); }
+</style>

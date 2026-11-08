@@ -1,0 +1,24 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import EntrainementClasses from "../../components/EntrainementClasses.astro";
+---
+<Layout title="Entraînement par chapitre" description="Entraînement par matière, chapitre et sous-chapitre, à trois niveaux cumulatifs (débutant, intermédiaire, confirmé), à partir des cours et examens de Charlie">
+  <p class="fil-ariane"><a href="/entrainement">← Entraînement</a></p>
+  <h1>Entraînement par chapitre</h1>
+  <p class="muted intro">
+    Choisissez une matière, un chapitre, puis un sous-chapitre précis (ou tout le chapitre). Trois niveaux,
+    <strong>cumulatifs</strong> : <strong>débutant</strong> (culture générale, sans calcul), <strong>intermédiaire</strong>
+    (application directe du sous-chapitre) et <strong>confirmé</strong> (synthèse de plusieurs notions, calculs plus
+    complexes) — chaque niveau inclut les questions des niveaux inférieurs. Premier test sur une seule matière —
+    la banque va s'enrichir progressivement.
+  </p>
+
+  <EntrainementClasses />
+
+  <style>
+    .fil-ariane { margin: 0 0 1.5rem; font-size: .85rem; }
+    .fil-ariane a { color: var(--muted); text-decoration: none; }
+    .fil-ariane a:hover { color: var(--accent); }
+    .intro { margin: 0 0 2.5rem; }
+  </style>
+</Layout>

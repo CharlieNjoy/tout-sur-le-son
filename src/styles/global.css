@@ -39,3 +39,12 @@ h2 { font-weight: 400; }
 
 /* Les éléments masqués restent masqués, même dans une grille */
 [hidden] { display: none !important; }
+
+/* ===== Contenu de leçon (rendu du Markdown/MDX des pages de cours) ===== */
+.prose { display: grid; gap: 1.75rem; }
+.prose h2 { margin: 1rem 0 0; font-size: 1.4rem; font-weight: 400; }
+.prose p { margin: 0; line-height: 1.7; }
+.prose p:first-child { font-size: 1.15rem; }
+.prose ul { margin: 0; padding-left: 1.2rem; display: grid; gap: .5rem; }
+.prose li { line-height: 1.6; }
+.prose strong { color: var(--fg); }

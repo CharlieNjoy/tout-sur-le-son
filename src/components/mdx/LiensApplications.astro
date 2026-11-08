@@ -1,0 +1,43 @@
+---
+// Liens directs vers des applications du site, à placer en bas d'une leçon.
+// Utilisable dans une leçon .mdx : <LiensApplications items={[{ titre, href, texte }]} />
+const { items = [] } = Astro.props;
+---
+{items.length > 0 && (
+  <aside class="liens-applis">
+    <h2>À tester</h2>
+    <ul>
+      {items.map((a) => (
+        <li>
+          <a href={a.href}>{a.titre}</a>
+          {a.texte && <span class="desc"> — {a.texte}</span>}
+        </li>
+      ))}
+    </ul>
+  </aside>
+)}
+
+<style>
+  .liens-applis {
+    padding: 1.4rem 1.5rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .liens-applis h2 {
+    margin: 0 0 .75rem;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .liens-applis ul { margin: 0; padding-left: 1.1rem; }
+  .liens-applis li { padding: .3rem 0; line-height: 1.5; }
+  .liens-applis a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  .liens-applis a:hover { border-bottom-color: var(--accent); }
+  .desc { color: var(--muted); font-size: .92rem; }
+</style>

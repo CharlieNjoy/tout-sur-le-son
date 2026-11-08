@@ -1,0 +1,64 @@
+---
+// Échelle verticale du niveau sonore en dB SPL (et pression correspondante en Pa),
+// avec quelques repères de la vie courante. Prévue pour accompagner un texte dans
+// <TexteAvecFigure><EchelleDecibels slot="figure" />texte… </TexteAvecFigure>
+const reperes = [
+  { db: 140, pa: "200 Pa", exemple: "Détonation, départ de fusée" },
+  { db: 120, pa: "20 Pa", exemple: "Décollage d'avion (proche)" },
+  { db: 100, pa: "2 Pa", exemple: "Concert, marteau-piqueur" },
+  { db: 80, pa: "0,2 Pa", exemple: "Circulation dense" },
+  { db: 60, pa: "0,02 Pa", exemple: "Conversation normale" },
+  { db: 40, pa: "0,002 Pa", exemple: "Bibliothèque" },
+  { db: 20, pa: "0,0002 Pa", exemple: "Bruissement de feuilles" },
+  { db: 0, pa: "0,00002 Pa", exemple: "Seuil d'audition" },
+];
+const yPct = (db) => ((140 - db) / 140) * 100;
+---
+<div class="echelle-db">
+  <p class="titre">Niveau sonore</p>
+  <div class="corps">
+    <div class="piste">
+      <div class="degrade"></div>
+      {reperes.map((r) => (
+        <span class="tick" style={`top: ${yPct(r.db)}%`}></span>
+      ))}
+    </div>
+    <div class="libelles">
+      {reperes.map((r) => (
+        <div class="libelle" style={`top: ${yPct(r.db)}%`}>
+          <p class="db">{r.db}&nbsp;dB <span class="pa">· {r.pa}</span></p>
+          <p class="exemple">{r.exemple}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .echelle-db { display: flex; flex-direction: column; gap: .75rem; }
+  .titre {
+    margin: 0; font-size: .75rem; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); text-align: center;
+  }
+  .corps { position: relative; display: flex; gap: .8rem; height: 520px; }
+  .piste { position: relative; width: 8px; border-radius: 5px; overflow: hidden; flex-shrink: 0; }
+  .degrade {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, var(--accent), rgba(110, 231, 255, .12));
+  }
+  .tick {
+    position: absolute; left: 0; width: 8px; height: 2px;
+    background: var(--bg); transform: translateY(-1px);
+  }
+  .libelles { position: relative; flex: 1; min-width: 0; }
+  .libelle { position: absolute; left: 0; right: 0; transform: translateY(-50%); }
+  .libelle .db {
+    margin: 0; font-size: .85rem; color: var(--fg); font-variant-numeric: tabular-nums;
+  }
+  .libelle .pa { color: var(--muted); font-weight: 400; }
+  .libelle .exemple { margin: .1rem 0 0; font-size: .78rem; color: var(--muted); line-height: 1.3; }
+
+  @media (max-width: 720px) {
+    .corps { height: 460px; }
+  }
+</style>

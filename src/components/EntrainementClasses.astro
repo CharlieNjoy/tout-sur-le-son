@@ -1,0 +1,470 @@
+---
+import "../styles/applis.css";
+import { matieres } from "../data/cours.js";
+import { questions, NIVEAUX } from "../data/entrainement-classes.js";
+
+// Plan matière → chapitre → sous-chapitres, calqué EXACTEMENT sur /cours
+// (src/data/cours.js), sous-chapitres dédoublonnés tous niveaux confondus.
+const plan = matieres.map((m) => ({
+  id: m.id,
+  nom: m.nom,
+  chapitres: m.chapitres.map((ch) => ({
+    titre: ch.titre,
+    sousChapitres: [...new Set(Object.values(ch.niveaux).flat())],
+  })),
+}));
+---
+<div class="appli entrainement-classes">
+  <!-- Données transmises au script -->
+  <script type="application/json" id="donnees-entrainement-classes" set:html={JSON.stringify(questions)} />
+  <script type="application/json" id="plan-cours" set:html={JSON.stringify(plan)} />
+  <script type="application/json" id="niveaux-cours" set:html={JSON.stringify(NIVEAUX)} />
+
+  <!-- ===== ÉCRAN 1 : réglages ===== -->
+  <div class="ecran-reglages">
+    <div>
+      <p class="groupe-titre">Matière</p>
+      <div class="puces" data-groupe="matiere" id="puces-matiere"></div>
+    </div>
+
+    <div id="bloc-chapitre" hidden>
+      <p class="groupe-titre">Chapitre</p>
+      <div class="puces" data-groupe="chapitre" id="puces-chapitre"></div>
+    </div>
+
+    <div id="bloc-sous-chapitre" hidden>
+      <p class="groupe-titre">Sous-chapitre</p>
+      <div class="puces" data-groupe="sous-chapitre" id="puces-sous-chapitre"></div>
+    </div>
+
+    <div id="bloc-niveau" hidden>
+      <p class="groupe-titre">Niveau <span class="muted indice">(inclut les niveaux inférieurs)</span></p>
+      <div class="puces" data-groupe="niveau" id="puces-niveau"></div>
+    </div>
+
+    <div class="reglages-bas" id="bloc-demarrer" hidden>
+      <label class="nombre">
+        <span class="nom">Nombre de questions</span>
+        <input type="number" id="nb-questions-classes" min="3" max="45" value="10" />
+      </label>
+      <button type="button" class="bouton-son" id="demarrer-classes">Démarrer l'entraînement</button>
+    </div>
+
+    <p class="muted note" id="compte-dispo-classes"></p>
+
+    <div class="historique" id="historique-classes" hidden>
+      <p class="groupe-titre">Dernières tentatives</p>
+      <div class="historique-lignes" id="historique-lignes-classes"></div>
+    </div>
+  </div>
+
+  <!-- ===== ÉCRAN 2 : question ===== -->
+  <div class="ecran-quiz" hidden>
+    <div class="quiz-entete">
+      <span class="muted" id="quiz-position-classes"></span>
+      <span class="quiz-tag" id="quiz-tag-classes"></span>
+    </div>
+    <div class="quiz-barre"><div class="quiz-barre-remplie" id="quiz-progression-classes"></div></div>
+
+    <h2 id="quiz-question-classes"></h2>
+    <p class="muted quiz-source" id="quiz-source-classes"></p>
+
+    <div class="quiz-choix" id="quiz-choix-classes"></div>
+
+    <div class="quiz-correction" id="quiz-correction-classes" hidden>
+      <p class="quiz-verdict" id="quiz-verdict-classes"></p>
+      <p class="muted" id="quiz-explication-classes"></p>
+      <button type="button" class="bouton-son" id="suivant-classes">Question suivante</button>
+    </div>
+  </div>
+
+  <!-- ===== ÉCRAN 3 : score ===== -->
+  <div class="ecran-score" hidden>
+    <h2>Résultat</h2>
+    <dl class="mesures">
+      <div><dt>Score</dt><dd id="score-note-classes"></dd></div>
+      <div><dt>Bonnes réponses</dt><dd id="score-bonnes-classes"></dd></div>
+      <div><dt>Sous-chapitre le plus solide</dt><dd id="score-forte-classes"></dd></div>
+      <div><dt>Sous-chapitre à revoir</dt><dd id="score-faible-classes"></dd></div>
+    </dl>
+    <div class="score-revue" id="score-revue-classes"></div>
+    <button type="button" class="bouton-son" id="recommencer-classes">Recommencer</button>
+  </div>
+
+</div>
+
+<style>
+  .entrainement-classes { max-width: 640px; }
+
+  /* ----- Réglages ----- */
+  .ecran-reglages { display: grid; gap: 1.5rem; }
+  .indice { font-weight: 400; text-transform: none; letter-spacing: normal; font-size: .85em; }
+  .reglages-bas { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: end; }
+  .nombre { display: grid; gap: .4rem; }
+  .nombre input {
+    font: inherit; width: 6rem; padding: .5rem .7rem; color: var(--fg); background: none;
+    border: 1px solid var(--line); border-radius: 8px;
+  }
+  .nombre input:focus { outline: none; border-color: var(--accent); }
+  #demarrer-classes:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ----- Historique ----- */
+  .historique { margin-top: .5rem; }
+  .historique-lignes { display: grid; gap: .5rem; margin-top: .6rem; }
+  .historique-ligne {
+    display: flex; justify-content: space-between; gap: 1rem; font-size: .83rem;
+    padding: .55rem .8rem; border: 1px solid var(--line); border-radius: 8px; color: var(--muted);
+  }
+  .historique-ligne .note { color: var(--fg); font-weight: 500; }
+
+  /* ----- Question ----- */
+  .quiz-entete { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; }
+  .quiz-tag {
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--accent);
+    padding: .2rem .6rem; border: 1px solid rgba(110, 231, 255, .4); border-radius: 999px;
+  }
+  .quiz-barre { height: 3px; background: var(--line); border-radius: 2px; margin: .75rem 0 1.5rem; overflow: hidden; }
+  .quiz-barre-remplie { height: 100%; background: var(--accent); width: 0%; transition: width .3s; }
+  #quiz-question-classes { font-size: 1.3rem; font-weight: 400; line-height: 1.4; margin: 0 0 .5rem; }
+  .quiz-source { font-size: .8rem; margin: 0 0 1.5rem; font-style: italic; }
+
+  .quiz-choix { display: grid; gap: .75rem; }
+  .quiz-option {
+    font: inherit; text-align: left; cursor: pointer; padding: .9rem 1.1rem;
+    border: 1px solid var(--line); border-radius: 10px; background: none; color: var(--fg);
+    transition: border-color .2s, background .2s;
+  }
+  .quiz-option:hover:not(:disabled) { border-color: var(--accent); }
+  .quiz-option:disabled { cursor: default; }
+  .quiz-option.bonne { border-color: #6fdc8c; background: rgba(111, 220, 140, .1); }
+  .quiz-option.mauvaise { border-color: #ff6b5a; background: rgba(255, 107, 90, .1); }
+
+  .quiz-correction { margin-top: 1.5rem; display: grid; gap: .5rem; }
+  .quiz-verdict { font-size: 1.05rem; margin: 0; }
+  .quiz-verdict.ok { color: #6fdc8c; }
+  .quiz-verdict.ko { color: #ff6b5a; }
+
+  /* ----- Score ----- */
+  .ecran-score h2 { margin-top: 0; }
+  .score-revue { display: grid; gap: .5rem; margin: 1.5rem 0; }
+  .score-ligne {
+    display: flex; justify-content: space-between; gap: 1rem; font-size: .88rem;
+    padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 8px;
+  }
+  .score-ligne.ok { color: #6fdc8c; }
+  .score-ligne.ko { color: #ff6b5a; }
+</style>
+
+<script>
+  import gsap from "gsap";
+
+  const racine = document.querySelector(".entrainement-classes");
+  const toutes = JSON.parse(document.getElementById("donnees-entrainement-classes").textContent);
+  const plan = JSON.parse(document.getElementById("plan-cours").textContent);
+  const NIVEAUX = JSON.parse(document.getElementById("niveaux-cours").textContent); // [{id,nom}, ordre = ordre de progression]
+  const ORDRE_NIVEAU = NIVEAUX.map((n) => n.id);
+
+  const LABELS_NIVEAU = Object.fromEntries(NIVEAUX.map((n) => [n.id, n.nom]));
+  const LABELS_MATIERE = Object.fromEntries(plan.map((m) => [m.id, m.nom]));
+
+  // ----- Historique des tentatives (localStorage, best-effort) -----
+  const CLE_HISTORIQUE = "entrainement-chapitres-historique";
+  function chargerHistorique() {
+    try {
+      const brut = window.localStorage.getItem(CLE_HISTORIQUE);
+      return brut ? JSON.parse(brut) : [];
+    } catch { return []; }
+  }
+  function enregistrerTentative(t) {
+    try {
+      const h = chargerHistorique();
+      h.unshift(t);
+      window.localStorage.setItem(CLE_HISTORIQUE, JSON.stringify(h.slice(0, 20)));
+    } catch { /* stockage indisponible : on ignore */ }
+  }
+  function afficherHistorique() {
+    const bloc = racine.querySelector("#historique-classes");
+    const lignes = racine.querySelector("#historique-lignes-classes");
+    const h = chargerHistorique();
+    if (h.length === 0) { bloc.hidden = true; return; }
+    bloc.hidden = false;
+    lignes.innerHTML = "";
+    h.slice(0, 5).forEach((t) => {
+      const div = document.createElement("div");
+      div.className = "historique-ligne";
+      const date = new Date(t.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+      div.innerHTML = `<span>${date} · ${LABELS_MATIERE[t.matiere] ?? t.matiere} · ${t.chapitre}${t.sousChapitre !== "toutes" ? " · " + t.sousChapitre : ""} · ${LABELS_NIVEAU[t.niveau] ?? t.niveau}</span><span class="note">${t.bonnes}/${t.total} (${t.pct}%)</span>`;
+      lignes.appendChild(div);
+    });
+  }
+
+  // ----- États des filtres -----
+  let matiereChoisie = null;
+  let chapitreChoisi = null;
+  let sousChapitreChoisi = "toutes";
+  let niveauChoisi = ORDRE_NIVEAU[0];
+
+  const ecranReglages = racine.querySelector(".ecran-reglages");
+  const ecranQuiz = racine.querySelector(".ecran-quiz");
+  const ecranScore = racine.querySelector(".ecran-score");
+  const compteDispo = racine.querySelector("#compte-dispo-classes");
+  const nbInput = racine.querySelector("#nb-questions-classes");
+  const blocChapitre = racine.querySelector("#bloc-chapitre");
+  const blocSousChapitre = racine.querySelector("#bloc-sous-chapitre");
+  const blocNiveau = racine.querySelector("#bloc-niveau");
+  const blocDemarrer = racine.querySelector("#bloc-demarrer");
+
+  function melanger(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function creerPuce(groupe, valeur, label, actif) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `puce ${actif ? "actif" : ""}`;
+    b.dataset.valeur = valeur;
+    b.textContent = label;
+    b.addEventListener("click", () => selectionner(groupe, b));
+    return b;
+  }
+
+  function selectionner(groupe, bouton) {
+    const conteneur = bouton.closest(".puces");
+    conteneur.querySelectorAll(".puce").forEach((b) => b.classList.remove("actif"));
+    bouton.classList.add("actif");
+
+    if (groupe === "matiere") {
+      matiereChoisie = bouton.dataset.valeur;
+      chapitreChoisi = null;
+      afficherChapitres();
+    } else if (groupe === "chapitre") {
+      chapitreChoisi = bouton.dataset.valeur;
+      sousChapitreChoisi = "toutes";
+      afficherSousChapitres();
+    } else if (groupe === "sous-chapitre") {
+      sousChapitreChoisi = bouton.dataset.valeur;
+      majCompte();
+    } else if (groupe === "niveau") {
+      niveauChoisi = bouton.dataset.valeur;
+      majCompte();
+    }
+  }
+
+  // Étape 1 : puces matière (construites dynamiquement depuis le plan)
+  const pucesMatiere = racine.querySelector("#puces-matiere");
+  plan.forEach((m, i) => pucesMatiere.appendChild(creerPuce("matiere", m.id, m.nom, i === 0)));
+  matiereChoisie = plan[0]?.id ?? null;
+
+  // Étape 2 : puces chapitre (dépend de la matière choisie)
+  function afficherChapitres() {
+    const puces = racine.querySelector("#puces-chapitre");
+    puces.innerHTML = "";
+    const m = plan.find((x) => x.id === matiereChoisie);
+    blocSousChapitre.hidden = true;
+    blocNiveau.hidden = true;
+    blocDemarrer.hidden = true;
+
+    if (!m || m.chapitres.length === 0) {
+      blocChapitre.hidden = true;
+      compteDispo.textContent = `Bientôt disponible pour « ${LABELS_MATIERE[matiereChoisie] ?? matiereChoisie} ».`;
+      return;
+    }
+    blocChapitre.hidden = false;
+    m.chapitres.forEach((ch, i) => puces.appendChild(creerPuce("chapitre", ch.titre, ch.titre, false)));
+    chapitreChoisi = null;
+    compteDispo.textContent = "Choisissez un chapitre.";
+  }
+
+  // Étape 3 : puces sous-chapitre (« Chapitre entier » + chaque sous-chapitre)
+  function afficherSousChapitres() {
+    const puces = racine.querySelector("#puces-sous-chapitre");
+    puces.innerHTML = "";
+    puces.appendChild(creerPuce("sous-chapitre", "toutes", "Chapitre entier", true));
+    const m = plan.find((x) => x.id === matiereChoisie);
+    const ch = m?.chapitres.find((c) => c.titre === chapitreChoisi);
+    (ch?.sousChapitres ?? []).forEach((sc) => puces.appendChild(creerPuce("sous-chapitre", sc, sc, false)));
+    sousChapitreChoisi = "toutes";
+    blocSousChapitre.hidden = false;
+    blocNiveau.hidden = false;
+    blocDemarrer.hidden = false;
+    majCompte();
+  }
+
+  // Étape 4 : puces niveau (ordre = ordre de progression ; cumulatif)
+  const pucesNiveau = racine.querySelector("#puces-niveau");
+  NIVEAUX.forEach((n, i) => pucesNiveau.appendChild(creerPuce("niveau", n.id, n.nom, i === 0)));
+
+  function dispo() {
+    if (!matiereChoisie || !chapitreChoisi) return [];
+    const rangMax = ORDRE_NIVEAU.indexOf(niveauChoisi);
+    return toutes.filter((q) =>
+      q.matiere === matiereChoisie &&
+      q.chapitre === chapitreChoisi &&
+      (sousChapitreChoisi === "toutes" || q.sousChapitre === sousChapitreChoisi) &&
+      ORDRE_NIVEAU.indexOf(q.niveau) <= rangMax
+    );
+  }
+
+  function majCompte() {
+    const n = dispo().length;
+    const demarrerBouton = racine.querySelector("#demarrer-classes");
+    compteDispo.textContent = n > 0
+      ? `${n} question${n > 1 ? "s" : ""} disponible${n > 1 ? "s" : ""} pour cette sélection.`
+      : `Aucune question en banque pour cette sélection pour l'instant — revenez bientôt.`;
+    demarrerBouton.disabled = n === 0;
+    nbInput.max = String(Math.max(n, 1));
+    if (Number(nbInput.value) > n) nbInput.value = String(Math.max(n, 1));
+  }
+
+  afficherHistorique();
+
+  // ----- Déroulé du quiz -----
+  let file = [];
+  let index = 0;
+  let bonnes = 0;
+  const reponses = [];
+
+  function demarrer() {
+    const d = dispo();
+    if (d.length === 0) return;
+    const n = Math.min(Math.max(Number(nbInput.value) || 10, 1), d.length);
+    file = melanger(d).slice(0, n);
+    index = 0;
+    bonnes = 0;
+    reponses.length = 0;
+
+    ecranReglages.hidden = true;
+    ecranScore.hidden = true;
+    ecranQuiz.hidden = false;
+    gsap.fromTo(ecranQuiz, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .4 });
+    afficherQuestion();
+  }
+
+  function afficherQuestion() {
+    const q = file[index];
+    const position = racine.querySelector("#quiz-position-classes");
+    const tag = racine.querySelector("#quiz-tag-classes");
+    const barre = racine.querySelector("#quiz-progression-classes");
+    const titre = racine.querySelector("#quiz-question-classes");
+    const source = racine.querySelector("#quiz-source-classes");
+    const choixDiv = racine.querySelector("#quiz-choix-classes");
+    const correction = racine.querySelector("#quiz-correction-classes");
+
+    position.textContent = `Question ${index + 1} / ${file.length}`;
+    tag.textContent = `${LABELS_NIVEAU[q.niveau]} · ${q.sousChapitre ?? q.chapitre}`;
+    barre.style.width = `${(index / file.length) * 100}%`;
+    titre.textContent = q.question;
+    source.textContent = `Source : ${q.source}`;
+    correction.hidden = true;
+
+    // On mélange l'ordre d'affichage des choix (la bonne réponse est toujours
+    // à l'index 0 dans les données)
+    const ordre = melanger(q.choix.map((texte, i) => ({ texte, bonne: i === q.correct })));
+
+    choixDiv.innerHTML = "";
+    ordre.forEach((c) => {
+      const bouton = document.createElement("button");
+      bouton.type = "button";
+      bouton.className = "quiz-option";
+      bouton.textContent = c.texte;
+      bouton.addEventListener("click", () => repondre(bouton, c.bonne, q));
+      choixDiv.appendChild(bouton);
+    });
+
+    gsap.fromTo(titre, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .35 });
+  }
+
+  function repondre(bouton, bonne, q) {
+    const choixDiv = racine.querySelector("#quiz-choix-classes");
+    const options = [...choixDiv.querySelectorAll(".quiz-option")];
+    options.forEach((o) => (o.disabled = true));
+
+    options.forEach((o) => {
+      if (o === bouton) o.classList.add(bonne ? "bonne" : "mauvaise");
+    });
+    if (!bonne) {
+      // on met aussi en évidence la bonne réponse parmi les options affichées
+      const texteCorrect = q.choix[q.correct];
+      const b = options.find((o) => o.textContent === texteCorrect);
+      b?.classList.add("bonne");
+    }
+
+    if (bonne) bonnes++;
+    reponses.push({ q, ok: bonne });
+
+    const verdict = racine.querySelector("#quiz-verdict-classes");
+    const explication = racine.querySelector("#quiz-explication-classes");
+    const correction = racine.querySelector("#quiz-correction-classes");
+
+    verdict.textContent = bonne ? "Bonne réponse." : "Mauvaise réponse.";
+    verdict.className = `quiz-verdict ${bonne ? "ok" : "ko"}`;
+    explication.textContent = q.explication + (q.verifie ? "" : " (réponse calculée/recoupée, pas de corrigé officiel disponible pour cette question)");
+    correction.hidden = false;
+    gsap.fromTo(correction, { opacity: 0 }, { opacity: 1, duration: .3 });
+  }
+
+  racine.querySelector("#suivant-classes").addEventListener("click", () => {
+    index++;
+    if (index >= file.length) afficherScore();
+    else afficherQuestion();
+  });
+
+  function afficherScore() {
+    ecranQuiz.hidden = true;
+    ecranScore.hidden = false;
+    gsap.fromTo(ecranScore, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .4 });
+
+    const total = file.length;
+    const pct = Math.round((bonnes / total) * 100);
+    racine.querySelector("#score-note-classes").textContent = `${pct}%`;
+    racine.querySelector("#score-bonnes-classes").textContent = `${bonnes} / ${total}`;
+
+    enregistrerTentative({
+      date: Date.now(), matiere: matiereChoisie, chapitre: chapitreChoisi,
+      sousChapitre: sousChapitreChoisi, niveau: niveauChoisi, bonnes, total, pct,
+    });
+
+    // Score par sous-chapitre (ou chapitre si pas de sous-chapitre précis)
+    const parGroupe = {};
+    reponses.forEach(({ q, ok }) => {
+      const cle = q.sousChapitre ?? q.chapitre;
+      parGroupe[cle] ??= { ok: 0, total: 0 };
+      parGroupe[cle].total++;
+      if (ok) parGroupe[cle].ok++;
+    });
+    const entrees = Object.entries(parGroupe).map(([c, s]) => ({ c, ratio: s.ok / s.total, ...s }));
+    entrees.sort((a, b) => b.ratio - a.ratio);
+    racine.querySelector("#score-forte-classes").textContent = entrees[0] ? entrees[0].c : "—";
+    racine.querySelector("#score-faible-classes").textContent = entrees.at(-1) ? entrees.at(-1).c : "—";
+
+    // Revue des questions ratées
+    const revue = racine.querySelector("#score-revue-classes");
+    revue.innerHTML = "";
+    const ratees = reponses.filter((r) => !r.ok);
+    if (ratees.length === 0) {
+      revue.innerHTML = `<p class="muted">Aucune erreur, excellent !</p>`;
+    } else {
+      ratees.forEach(({ q }) => {
+        const ligne = document.createElement("div");
+        ligne.className = "score-ligne ko";
+        ligne.innerHTML = `<span>${q.question}</span><span>${LABELS_NIVEAU[q.niveau]}</span>`;
+        revue.appendChild(ligne);
+      });
+    }
+  }
+
+  racine.querySelector("#demarrer-classes").addEventListener("click", demarrer);
+  racine.querySelector("#recommencer-classes").addEventListener("click", () => {
+    ecranScore.hidden = true;
+    ecranReglages.hidden = false;
+    gsap.fromTo(ecranReglages, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .4 });
+  });
+
+  // Initialisation : affiche les chapitres de la première matière
+  afficherChapitres();
+</script>

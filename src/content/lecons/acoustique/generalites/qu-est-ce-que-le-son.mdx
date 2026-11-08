@@ -1,0 +1,89 @@
+---
+titre: "Qu'est-ce que le son ?"
+ordre: 1
+references:
+  - titre: "Onde sonore : qu'est-ce que c'est ?"
+    url: "https://www.futura-sciences.com/sciences/definitions/physique-onde-sonore-15526/"
+    description: "Futura-Sciences — définition de l'onde sonore et de sa propagation"
+  - titre: "Acoustique"
+    url: "https://www.universalis.fr/dictionnaire/acoustique/"
+    description: "Encyclopædia Universalis — entrée du dictionnaire"
+---
+import Definitions from "../../../../components/mdx/Definitions.astro";
+import Encadre from "../../../../components/mdx/Encadre.astro";
+import Echelle from "../../../../components/mdx/Echelle.astro";
+import MoleculesAgitation from "../../../../components/animations/MoleculesAgitation.astro";
+import OndeCompression from "../../../../components/animations/OndeCompression.astro";
+import LiensApplications from "../../../../components/mdx/LiensApplications.astro";
+import TexteAvecFigure from "../../../../components/mdx/TexteAvecFigure.astro";
+import EchelleDecibels from "../../../../components/mdx/EchelleDecibels.astro";
+
+## Son : Sensation auditive provoquée (le plus souvent) par une onde acoustique.
+
+
+<Definitions items={[
+  { mot: "Sensation", description: "Le son est quelque chose qui se construit dans notre cerveau à partir de ce que nos sens captent du réel" },
+  { mot: "auditive", description: "Le sens lié à l'audition est l'ouie, elle est principalement dans l'oreille" },
+  { mot: "Onde acoustique", description: "Perturbation de pression qui se propage dans un milieu (air, eau, solide…)." },
+  { mot: "le plus souvent", description: "Il existe des sons qui ne viennent pas du monde qui nous entoure mais de notre cerveau (acouphène, illusion, rèves...)" },
+]} />
+
+## L'air n'est jamais vraiment au repos
+
+L'air est fait de milliards de molécules libres qui s'entrechoquent sans arrêt, même en l'absence de tout son. Leur agitation exerce une force sur toute surface : c'est la **pression atmosphérique**, environ 100 000 Pa au niveau de la mer soit 1 bar.
+
+<MoleculesAgitation legende="Molécules d'air en agitation permanente — pas à l'échelle bien sûr." />
+
+## Le son : une perturbation qui voyage
+
+Quand une source vibre — une corde, une membrane de haut-parleur — elle pousse les molécules voisines. Celles-ci poussent les suivantes, qui poussent les suivantes… La perturbation de pression avance ainsi de proche en proche : c'est l'onde sonore.
+
+<OndeCompression legende="La perturbation se déplace — pas les molécules, qui restent sur place." />
+
+<Encadre>Quand les molécules se rapprochent, la pression augmente, c'est la pression acoustique qui vient appuyer sur notre tympa et nous permet de percevoir l'onde sonore et d'entendre un son</Encadre>
+
+## La fréquence
+
+Notre ouie perçoit les sons en fonction de leur répétition, on note celà la fréquence et on la mesure en Hert (Hz) qui signifie nombre de répétitions par seconde.
+Seulement on ne perçoit pas toutes les fréquences.
+
+<Echelle />
+<Encadre>Plus la fréquence est élevée plus le son nous parrait aigue.</Encadre>
+
+<TexteAvecFigure>
+<EchelleDecibels slot="figure" />
+## Et le décibel alors ?
+
+
+<br />
+Plus la variation de pression est importante plus le son est fort. Pour la quantifier on préfère utiliser une échelle en décibèl (dB).<br />
+On note alors le niveau sonore en dB SPL pour Sound Pressure Level (Niveau de pression sonore).
+<br />
+<Encadre>Une variation de 1 Pa équivaut à 94 dB SPL <br />
+L'oreille humaine perçoit des variation de 1 à 3dB<br />
+Doubler la pression acoustique revient à gagner 6dB<br />
+Quand on ajoute 10dB à un son, on le perçoit environ 2 fois plus fort.</Encadre><br />
+
+
+Au-delà d'une certaine intensité, une perturbation très brève et très forte devient une **onde de choc** (une explosion, un bang supersonique)
+</TexteAvecFigure>
+
+## À retenir
+
+- Le **son** est une sensation ; l'**onde acoustique** est le phénomène physique qui la provoque.
+- Une onde acoustique est une variation de **pression** qui se propage dans un milieu.
+- Elle avance de proche en proche, **sans déplacer la matière**.
+- Seules les ondes entre environ 20 Hz et 20 kHz sont perçues comme des sons par l'oreille humaine.
+
+<LiensApplications items={[
+  {
+    titre: "Générateur",
+    href: "/applications/generateur",
+    texte: "écoutez des sons purs sur toute la plage de fréquences, des infrasons aux ultrasons.",
+  },
+  {
+    titre: "Audiométrie relative",
+    href: "/applications/audiometrie",
+    texte: "testez votre propre limite de perception dans l'aigu, de 1 kHz à 20 kHz.",
+  },
+]} />

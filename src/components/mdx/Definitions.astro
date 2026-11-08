@@ -1,0 +1,38 @@
+---
+// Grille de cartes "mot / définition", utilisable dans une leçon .mdx :
+// <Definitions items={[{ mot: "Son", description: "..." }, ...]} />
+const { items = [] } = Astro.props;
+---
+<div class="cartes-def">
+  {items.map((d) => (
+    <div class="carte-def">
+      <p class="mot">{d.mot}</p>
+      <p>{d.description}</p>
+    </div>
+  ))}
+</div>
+
+<style>
+  .cartes-def {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  }
+  .carte-def {
+    padding: 1.1rem 1.2rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    display: grid;
+    gap: .4rem;
+    transition: border-color .2s;
+  }
+  .carte-def:hover { border-color: var(--accent); }
+  .carte-def .mot {
+    margin: 0;
+    color: var(--accent);
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .carte-def p + p { margin: 0; color: var(--fg); font-size: .95rem; line-height: 1.55; }
+</style>

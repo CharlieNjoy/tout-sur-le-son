@@ -1,0 +1,15 @@
+---
+// Phrase à retenir, mise en valeur. Utilisable dans une leçon .mdx :
+// <Encadre>Texte important</Encadre>
+---
+<div class="encadre"><slot /></div>
+
+<style>
+  .encadre {
+    padding: .9rem 1.1rem;
+    border-left: 2px solid var(--accent);
+    color: var(--fg);
+    font-size: 1.02rem;
+    line-height: 1.6;
+  }
+</style>

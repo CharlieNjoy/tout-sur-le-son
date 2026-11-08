@@ -1,0 +1,99 @@
+---
+// Animation : une impulsion de compression voyage le long d'une rangée de
+// particules — elles oscillent localement mais ne se déplacent pas globalement.
+// Utilisable dans n'importe quelle leçon .mdx : <OndeCompression legende="..." />
+const { legende = "La perturbation se déplace — pas les molécules." } = Astro.props;
+---
+<figure class="ecran-anim">
+  <canvas class="anim-onde"></canvas>
+  <figcaption>{legende}</figcaption>
+</figure>
+
+<style>
+  .ecran-anim { margin: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .ecran-anim canvas { display: block; width: 100%; height: 190px; }
+  .ecran-anim figcaption {
+    padding: .6rem .9rem;
+    border-top: 1px solid var(--line);
+    font-size: .82rem;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+
+<script>
+  function demarrer(canvas) {
+    const ctx = canvas.getContext("2d");
+    const styles = getComputedStyle(document.documentElement);
+    const ACCENT = styles.getPropertyValue("--accent").trim();
+    const LIGNE = styles.getPropertyValue("--line").trim();
+
+    const PERIODE = 2.6;   // secondes entre deux impulsions émises par la source
+    const SIGMA = 46;      // largeur de l'impulsion (px)
+    const LAMBDA = 34;     // "longueur d'onde" visuelle de l'oscillation interne
+    const AMPLITUDE = 9;   // déplacement max d'une particule (px)
+
+    let particules = [];
+    function construire() {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      const n = Math.max(20, Math.round(w / 14));
+      particules = [];
+      for (let i = 0; i < n; i++) particules.push({ x0: ((i + 0.5) / n) * w, y: h / 2 });
+    }
+    function redim() {
+      const r = canvas.getBoundingClientRect();
+      canvas.width = r.width * devicePixelRatio;
+      canvas.height = r.height * devicePixelRatio;
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      construire();
+    }
+    new ResizeObserver(redim).observe(canvas);
+    redim();
+
+    const depart = performance.now();
+    function dessiner(maintenant) {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      const t = (maintenant - depart) / 1000;
+      const phase = (t % PERIODE) / PERIODE;
+      const front = phase * (w + SIGMA * 4) - SIGMA * 2;
+
+      // Source à gauche : respire au rythme de l'émission
+      const respiration = Math.max(0, 1 - phase * 4);
+      ctx.beginPath();
+      ctx.fillStyle = ACCENT;
+      ctx.globalAlpha = 0.25 + respiration * 0.5;
+      ctx.arc(10, h / 2, 5 + respiration * 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      for (const p of particules) {
+        const dx = p.x0 - front;
+        const enveloppe = Math.exp(-(dx * dx) / (2 * SIGMA * SIGMA));
+        const deplacement = enveloppe * Math.cos((dx / LAMBDA) * Math.PI * 2) * AMPLITUDE;
+        const x = p.x0 + deplacement;
+        const taille = 2.6 + enveloppe * 2.2;
+
+        ctx.beginPath();
+        ctx.fillStyle = ACCENT;
+        ctx.globalAlpha = 0.35 + enveloppe * 0.65;
+        ctx.arc(x, p.y, taille, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      ctx.strokeStyle = LIGNE;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(10, h - 14);
+      ctx.lineTo(w - 10, h - 14);
+      ctx.stroke();
+
+      requestAnimationFrame(dessiner);
+    }
+    requestAnimationFrame(dessiner);
+  }
+
+  document.querySelectorAll(".anim-onde").forEach(demarrer);
+</script>
