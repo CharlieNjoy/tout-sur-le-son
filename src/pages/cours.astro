@@ -195,5 +195,11 @@ function numeroterChapitre(ch) {
       window.scrollTo({ top: 0 });
       apparaitre($(".matiere"));
     });
+
+    // Pré-sélection via l'URL (ex. lien "/cours#sciences" depuis une leçon)
+    const matiereCiblee = window.location.hash.slice(1);
+    if (matiereCiblee) {
+      document.querySelector(`.matiere[data-matiere="${matiereCiblee}"]`)?.click();
+    }
   </script>
 </Layout>

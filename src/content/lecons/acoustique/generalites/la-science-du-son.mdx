@@ -2,10 +2,67 @@
 titre: "La science du son"
 ordre: 2
 references:
-  - titre: "Support de cours (PDF) — Généralités sur le son"
-    url: "/cours-pdf/acoustique/1-generalites-sur-le-son.pdf"
-    description: "Diapositives du cours de Charlie"
+  - titre: "Acoustique"
+    url: "https://www.universalis.fr/dictionnaire/acoustique/"
+    description: "Encyclopædia Universalis — entrée du dictionnaire"
+  - titre: "Branches of acoustics"
+    url: "https://acousticalsociety.org/learn-about-acoustics/"
+    description: "Acoustical Society of America — présentation des domaines de l'acoustique"
 ---
-L'acoustique est la science qui étudie le son : sa production, sa propagation et sa perception. Elle mobilise la **physique** (comment l'onde se propage dans l'air ou un matériau), la **physiologie** (comment l'oreille transforme la vibration en signal nerveux) et la **psychologie** (comment le cerveau interprète ce signal — c'est la psychoacoustique).
+import Arborescence from "../../../../components/mdx/Arborescence.astro";
+import LiensApplications from "../../../../components/mdx/LiensApplications.astro";
 
-Dans ce cours, on sépare volontairement ces trois niveaux : une même question (« pourquoi ce son paraît-il plus fort ? ») peut avoir une réponse physique (plus de pression), physiologique (une fréquence où l'oreille est plus sensible) ou perceptive (un effet de masquage). Garder ces niveaux distincts évite beaucoup de confusions.
+L'acoustique n'est pas une seule science : c'est un tronc commun — l'étude des ondes sonores — qui se ramifie dès qu'on l'applique à un domaine particulier. Elle s'appuie aussi sur plusieurs disciplines associées, indispensables dès qu'on travaille concrètement avec le son. Voici comment tout cela s'organise.
+
+<Arborescence
+  racine="Acoustique"
+  branches={[
+    {
+      titre: "Fondamentale",
+      items: [
+        { nom: "Acoustique physique", description: "Étudie la création, la propagation et les propriétés des ondes sonores dans la matière." },
+        { nom: "Psychoacoustique", description: "Étudie comment le cerveau perçoit, interprète et traite les sons." },
+        { nom: "Électroacoustique", description: "Étudie la conversion entre énergie sonore et énergie électrique (micros, haut-parleurs)." },
+      ],
+    },
+    {
+      titre: "Appliquée",
+      items: [
+        { nom: "Acoustique architecturale", description: "Étudie le comportement du son dans les salles et les bâtiments (réverbération, isolation)." },
+        { nom: "Acoustique musicale", description: "Étudie la production, la structure et la perception des sons musicaux et des instruments." },
+        { nom: "Acoustique environnementale", description: "Étudie le bruit dans l'environnement (urbain, industriel) et ses nuisances." },
+        { nom: "Acoustique médicale", description: "Utilise les ultrasons à des fins de diagnostic (échographie) ou de thérapie." },
+      ],
+    },
+    {
+      titre: "Interdisciplinaire",
+      items: [
+        { nom: "Bioacoustique", description: "Étudie les sons produits et perçus par les êtres vivants (communication animale)." },
+        { nom: "Aéroacoustique", description: "Étudie le bruit généré par les écoulements d'air (avions, ventilation)." },
+        { nom: "Hydroacoustique", description: "Étudie la propagation du son dans l'eau (sonar, vie marine)." },
+        { nom: "Phonétique acoustique", description: "Étudie les propriétés acoustiques de la parole et du langage." },
+      ],
+    },
+    {
+      titre: "Disciplines associées",
+      items: [
+        { nom: "Traitement du signal", description: "Analyse et manipule mathématiquement les signaux (filtrage, transformée de Fourier, échantillonnage) — à la base des égaliseurs, compresseurs et effets numériques." },
+        { nom: "Électricité et électronique", description: "Étudie les circuits, tensions et composants — indispensable pour le câblage, l'amplification et l'alimentation des systèmes audio." },
+        { nom: "Numérique et informatique", description: "Conversion analogique-numérique, codage, réseaux audio (Dante, AES67) et traitement numérique du signal (DSP)." },
+        { nom: "Mécanique des fluides", description: "Étudie le comportement de l'air — le milieu même où se propage le son — et intervient aussi dans la conception des évents de haut-parleurs (bass-reflex)." },
+        { nom: "Mathématiques", description: "Trigonométrie, séries de Fourier, équations différentielles : les outils qui décrivent ondes, filtres et systèmes résonants." },
+        { nom: "Métrologie", description: "Mesure physique rigoureuse (calibration, incertitude) — essentielle pour les mesures acoustiques et les études réglementaires (EINS)." },
+      ],
+    },
+  ]}
+/>
+
+Toutes les notions scientifiques et mathématiques nécessaires à l'étude de l'acoustique sont à retrouver dans l'onglet [Sciences](/cours#sciences).
+
+<LiensApplications items={[
+  {
+    titre: "Générateur",
+    href: "/applications/generateur",
+    texte: "écoutez des sons purs sur toute la plage de fréquences, des infrasons aux ultrasons.",
+  },
+]} />
