@@ -1,17 +1,12 @@
 ---
 // =====================================================================
-//  AUDIOMÉTRIE RELATIVE — seuil de perception par tiers d'octave (1-20 kHz)
+//  AUDIOMÉTRIE RELATIVE — seuil de perception par octave ou tiers d'octave
 //
-//  Protocole façon Békésy simplifié :
-//  - À chaque fréquence, un bip pulsé monte en niveau (dB) jusqu'à ce que
-//    l'auditeur clique (il l'entend) → le niveau redescend alors jusqu'au
-//    clic suivant (il ne l'entend plus) → et ainsi de suite.
-//  - On moyenne plusieurs inversions (allers-retours) par fréquence pour
-//    réduire le biais du temps de réaction.
-//  - Les 14 tiers d'octave de 1 kHz à 20 kHz sont testés dans un ordre
-//    aléatoire, sans révéler la fréquence en cours (test en aveugle).
-//  - Il n'y a pas de calibration en dB SPL : le résultat est une courbe
-//    RELATIVE au seuil mesuré à 1 kHz (0 dB à 1 kHz par construction).
+//  Le protocole (paliers, moyennage, censure) vit dans
+//  ../scripts/audiometrie/protocole.js (logique pure, sans DOM ni audio).
+//  Le son (AudioContext, bip pulsé) vit dans
+//  ../scripts/audiometrie/audio.js. Ce composant ne fait que les relier
+//  à l'affichage ci-dessous.
 // =====================================================================
 import "../styles/applis.css";
 ---
@@ -21,19 +16,28 @@ import "../styles/applis.css";
   <section class="ecran-etape accueil">
     <ul class="consignes">
       <li>Utilisez un <strong>casque</strong> ou de bonnes enceintes, dans un endroit calme.</li>
-      <li>Le résultat est une sensibilité <strong>relative</strong> à 1 kHz, pas une mesure en dB SPL absolus.</li>
-      <li>14 fréquences sont testées dans un ordre aléatoire, sans être annoncées à l'avance.</li>
-      <li>Durée estimée : 10 à 15 minutes.</li>
+      <li>Le résultat est une sensibilité <strong>relative</strong> à la fréquence la mieux perçue, pas une mesure en dB SPL absolus.</li>
+      <li>Le 1 kHz est toujours testé en premier, puis les autres fréquences dans un ordre aléatoire, sans être annoncées à l'avance.</li>
     </ul>
-    <button class="bouton-son debut">Commencer</button>
+    <div class="choix-mode">
+      <button class="bouton-son debut" data-mode="simple">
+        Version rapide
+        <span class="detail">8 fréquences (octaves, 125 Hz–16 kHz) · 2 allers-retours chacune</span>
+      </button>
+      <button class="bouton-son debut" data-mode="complete">
+        Version complète
+        <span class="detail">23 fréquences (tiers d'octave, 125 Hz–20 kHz) · 4 allers-retours chacune</span>
+      </button>
+    </div>
   </section>
 
   <!-- ===== Calibration ===== -->
   <section class="ecran-etape calibration" hidden>
     <h2>Réglez votre volume</h2>
     <p>
-      Vous entendez un son de référence à 1 kHz. Réglez le volume de votre casque ou de vos
-      enceintes pour qu'il soit <strong>confortable</strong> — ni fort, ni faible.
+      Vous entendez un son de référence à 1 kHz, très faible. Réglez le volume de votre casque ou de
+      vos enceintes pour qu'il soit <strong>tout juste audible</strong> — à la limite de la perception,
+      pas confortable.
       Ne touchez plus au volume ensuite&nbsp;: c'est ce réglage qui sert de référence pour tout le test.
     </p>
     <button class="bouton-son suite-calibration">Continuer</button>
@@ -44,7 +48,7 @@ import "../styles/applis.css";
     <p class="progression">
       Fréquence <strong class="prog-freq">1</strong> / <strong class="prog-total">14</strong>
       <span class="sep">·</span>
-      inversion <strong class="prog-inv">0</strong> / <strong class="prog-inv-total">4</strong>
+      aller-retour <strong class="prog-inv">0</strong> / <strong class="prog-inv-total">4</strong>
     </p>
     <p class="instruction muted">
       Cliquez (ou appuyez sur <kbd>Espace</kbd>) dès que vous <strong>entendez</strong> le bip.
@@ -61,7 +65,7 @@ import "../styles/applis.css";
       <canvas class="courbe"></canvas>
     </div>
     <table class="tableau-resultats">
-      <thead><tr><th>Fréquence</th><th>Écart relatif / 1 kHz</th></tr></thead>
+      <thead><tr><th>Fréquence</th><th>Écart relatif au meilleur seuil</th></tr></thead>
       <tbody></tbody>
     </table>
     <div class="actions">
@@ -70,7 +74,7 @@ import "../styles/applis.css";
     </div>
     <p class="note muted">
       Une valeur marquée « ≥ » signifie que le son n'a pas été perçu même au niveau de sécurité
-      maximal du test&nbsp;: la perte réelle à cette fréquence est au moins aussi grande, peut-être plus.
+      maximal du test (0 dB)&nbsp;: la perte réelle à cette fréquence est au moins aussi grande, peut-être plus.
     </p>
   </section>
 
@@ -85,6 +89,12 @@ import "../styles/applis.css";
     display: grid; gap: .5rem; color: var(--fg);
   }
   .consignes li { line-height: 1.6; }
+
+  .choix-mode { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+  .choix-mode .bouton-son {
+    display: grid; gap: .35rem; width: 15rem; padding: 1rem 1.1rem;
+  }
+  .choix-mode .detail { font-size: .78rem; font-weight: 400; color: var(--muted); line-height: 1.4; }
 
   .calibration p { text-align: left; line-height: 1.7; }
 
@@ -128,28 +138,9 @@ import "../styles/applis.css";
 </style>
 
 <script>
-  import { fmt, couleurs, preparerCanvas, xLog, VOLUME_MAX } from "../scripts/outils.js";
-
-  // ----- Réglages du protocole -----
-  const FREQUENCES = [1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000];
-  const INVERSIONS_PAR_FREQ = 4;          // nombre d'allers-retours moyennés (choix : standard)
-  const VITESSE_DB_PAR_S = 4;             // vitesse de montée/descente du niveau
-  const DB_MIN = -50, DB_MAX = 0;         // 0 dB = plafond de sécurité du site (= VOLUME_MAX)
-  const DB_DEPART = -38;                  // niveau de départ (clairement sous le seuil habituel)
-  const DB_CALIBRATION = -20;             // niveau du son de référence (confortable)
-  const BIP_ON = 0.3, BIP_OFF = 0.25;     // bip pulsé : 300 ms son / 250 ms silence
-  const RAMPE = 0.012;                    // constante de temps des rampes de gain (anti-clic)
-
-  const dbVersLineaire = (db) => VOLUME_MAX * Math.pow(10, db / 20);
-
-  function melanger(tableau) {
-    const t = [...tableau];
-    for (let i = t.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [t[i], t[j]] = [t[j], t[i]];
-    }
-    return t;
-  }
+  import { fmt, couleurs, preparerCanvas, xLog } from "../scripts/outils.js";
+  import { ProtocoleAudiometrie, DB_CALIBRATION } from "../scripts/audiometrie/protocole.js";
+  import { MoteurAudiometrie } from "../scripts/audiometrie/audio.js";
 
   document.querySelectorAll(".audiometrie").forEach((racine) => {
     const $ = (s) => racine.querySelector(s);
@@ -165,124 +156,98 @@ import "../styles/applis.css";
       for (const [k, el] of Object.entries(ecrans)) el.hidden = k !== nom;
     }
 
-    // ----- Audio : un seul AudioContext pour toute la session -----
-    let ac = null, oscillateur = null, gainBip = null;
-    function demarrerAudio() {
-      ac = new AudioContext();
-      oscillateur = ac.createOscillator();
-      oscillateur.type = "sine";
-      oscillateur.frequency.value = 1000;
-      gainBip = ac.createGain();
-      gainBip.gain.value = 0;
-      oscillateur.connect(gainBip).connect(ac.destination);
-      oscillateur.start();
-    }
-    function arreterAudio() {
-      if (!ac) return;
-      const fini = ac;
-      gainBip.gain.setTargetAtTime(0, fini.currentTime, 0.02);
-      setTimeout(() => fini.close(), 150);
-      ac = null;
-    }
+    const moteur = new MoteurAudiometrie();
+    let protocole = null;
+    let tempsPrecedent = null;
+    let boucleActive = false;
 
     // ===================================================================
-    //  CALIBRATION : son de référence continu à 1 kHz
+    //  CHOIX DU MODE + CALIBRATION : son de référence continu à 1 kHz
     // ===================================================================
-    $(".debut").addEventListener("click", () => {
-      demarrerAudio();
-      oscillateur.frequency.value = 1000;
-      gainBip.gain.setTargetAtTime(dbVersLineaire(DB_CALIBRATION), ac.currentTime, RAMPE);
-      afficher("calibration");
+    racine.querySelectorAll(".debut").forEach((bouton) => {
+      bouton.addEventListener("click", () => {
+        protocole = new ProtocoleAudiometrie(bouton.dataset.mode);
+        $(".prog-total").textContent = protocole.progression.totalFreq;
+        $(".prog-inv-total").textContent = protocole.progression.totalAr;
+
+        moteur.demarrer();
+        moteur.definirFrequence(1000);
+        moteur.definirNiveauContinu(DB_CALIBRATION);
+        afficher("calibration");
+      });
     });
 
     $(".suite-calibration").addEventListener("click", () => {
-      gainBip.gain.setTargetAtTime(0, ac.currentTime, RAMPE);
+      moteur.silencer();
       demarrerTest();
     });
 
     // ===================================================================
     //  TEST
     // ===================================================================
-    const ordre = melanger(FREQUENCES);
-    const resultats = []; // { freq, seuilDb, censure, bruts: [...] }
-    let indexFreq = 0;
-    let direction = 1;      // 1 = monte, -1 = descend
-    let niveauDb = DB_DEPART;
-    let inversions = [];
-    let tempsPrecedent = null;
-    let enCours = false;
-
-    $(".prog-total").textContent = FREQUENCES.length;
-    $(".prog-inv-total").textContent = INVERSIONS_PAR_FREQ;
-
     function demarrerTest() {
-      indexFreq = 0;
-      enCours = true;
-      initialiserFrequence();
+      moteur.definirFrequence(protocole.frequenceActuelle);
+      majProgression();
       afficher("test");
       tempsPrecedent = performance.now();
+      boucleActive = true;
       requestAnimationFrame(boucle);
     }
 
-    function initialiserFrequence() {
-      direction = 1;
-      niveauDb = DB_DEPART;
-      inversions = [];
-      oscillateur.frequency.setTargetAtTime(ordre[indexFreq], ac.currentTime, RAMPE);
-      $(".prog-freq").textContent = indexFreq + 1;
-      $(".prog-inv").textContent = 0;
+    function majProgression() {
+      const p = protocole.progression;
+      $(".prog-freq").textContent = p.indexFreq + 1;
+      $(".prog-inv").textContent = p.ar;
     }
 
     function boucle(maintenant) {
-      if (!enCours) return;
+      if (!boucleActive) return;
       const dt = (maintenant - tempsPrecedent) / 1000;
       tempsPrecedent = maintenant;
 
-      niveauDb += direction * VITESSE_DB_PAR_S * dt;
-      niveauDb = Math.max(DB_MIN, Math.min(DB_MAX, niveauDb));
+      const freqAvant = protocole.frequenceActuelle;
+      protocole.avancerTemps(dt);
 
-      // Bip pulsé : on alterne son/silence sur un cycle (BIP_ON + BIP_OFF)
-      const phaseBip = (maintenant / 1000) % (BIP_ON + BIP_OFF);
-      const cible = phaseBip < BIP_ON ? dbVersLineaire(niveauDb) : 0;
-      gainBip.gain.setTargetAtTime(cible, ac.currentTime, RAMPE);
+      if (protocole.termine) {
+        terminerTest();
+        return;
+      }
+      if (protocole.frequenceActuelle !== freqAvant) {
+        moteur.definirFrequence(protocole.frequenceActuelle);
+        majProgression();
+      }
 
+      moteur.bipPulse(maintenant, protocole.niveauDb);
       requestAnimationFrame(boucle);
     }
 
     function signaler() {
-      if (!enCours) return;
-      inversions.push(niveauDb);
-      direction *= -1;
-      $(".prog-inv").textContent = inversions.length;
-
-      if (inversions.length >= INVERSIONS_PAR_FREQ) {
-        terminerFrequence(false);
+      if (!boucleActive) return;
+      protocole.signaler();
+      if (protocole.termine) {
+        terminerTest();
+      } else {
+        moteur.definirFrequence(protocole.frequenceActuelle); // la fréquence a pu changer (entrelacement)
+        majProgression();
       }
     }
 
     function passerFrequence() {
-      if (!enCours) return;
-      terminerFrequence(true);
+      if (!boucleActive) return;
+      protocole.passerFrequence();
+      if (protocole.termine) {
+        terminerTest();
+      } else {
+        moteur.definirFrequence(protocole.frequenceActuelle);
+        majProgression();
+      }
     }
 
-    function terminerFrequence(censure) {
-      const freq = ordre[indexFreq];
-      if (censure) {
-        resultats.push({ freq, seuilDb: DB_MAX, censure: true, bruts: inversions });
-      } else {
-        const moyenne = inversions.reduce((a, b) => a + b, 0) / inversions.length;
-        resultats.push({ freq, seuilDb: moyenne, censure: false, bruts: inversions });
-      }
-
-      indexFreq++;
-      if (indexFreq >= ordre.length) {
-        enCours = false;
-        gainBip.gain.setTargetAtTime(0, ac.currentTime, RAMPE);
-        arreterAudio();
-        afficherResultats();
-      } else {
-        initialiserFrequence();
-      }
+    function terminerTest() {
+      boucleActive = false;
+      moteur.silencer();
+      moteur.arreter();
+      afficherResultats();
     }
 
     $(".bouton-signal").addEventListener("click", signaler);
@@ -298,11 +263,7 @@ import "../styles/applis.css";
     //  RÉSULTATS
     // ===================================================================
     function afficherResultats() {
-      const parFreq = [...resultats].sort((a, b) => a.freq - b.freq);
-      const reference = parFreq.find((r) => r.freq === 1000);
-      const refDb = reference ? reference.seuilDb : 0;
-      const points = parFreq.map((r) => ({ ...r, relatif: r.seuilDb - refDb }));
-
+      const points = protocole.resultatsRelatifs();
       dessinerCourbe(points);
       remplirTableau(points);
       afficher("resultats");
@@ -344,7 +305,8 @@ import "../styles/applis.css";
 
       ctx.clearRect(0, 0, w, h);
       const y = (db) => HAUT + ((db - AXE_HAUT_DB) / (AXE_BAS_DB - AXE_HAUT_DB)) * (h - HAUT - BAS);
-      const x = (f) => GAUCHE + xLog(f, w - GAUCHE - DROITE, 1000, 20000);
+      const freqMin = Math.min(...protocole.frequences), freqMax = Math.max(...protocole.frequences);
+      const x = (f) => GAUCHE + xLog(f, w - GAUCHE - DROITE, freqMin, freqMax);
 
       // Grille horizontale (tous les 10 dB)
       ctx.strokeStyle = coul.ligne; ctx.lineWidth = 1;
@@ -356,8 +318,9 @@ import "../styles/applis.css";
       }
 
       // Repères verticaux (fréquences), étiquettes sur une partie seulement
-      const etiquetees = [1000, 2000, 4000, 8000, 16000, 20000];
-      for (const f of FREQUENCES) {
+      const candidatsEtiquettes = [125, 250, 500, 1000, 2000, 4000, 8000, 16000, 20000];
+      const etiquetees = candidatsEtiquettes.filter((f) => protocole.frequences.includes(f));
+      for (const f of protocole.frequences) {
         const xx = x(f);
         ctx.beginPath(); ctx.moveTo(xx, HAUT); ctx.lineTo(xx, h - BAS); ctx.strokeStyle = "rgba(255,255,255,.04)"; ctx.stroke();
         if (etiquetees.includes(f)) {

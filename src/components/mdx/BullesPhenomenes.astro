@@ -1,0 +1,61 @@
+---
+// Grille de bulles numérotées (3 colonnes max, responsive) qui détaillent
+// chaque phénomène du <SchemaGlobal /> : titre, explication, exemples.
+// <BullesPhenomenes items={[{ n, titre, texte, exemples: [...] }]} />
+interface Item {
+  n: number;
+  titre: string;
+  texte: string;
+  exemples: string[];
+}
+const { items = [] } = Astro.props as { items: Item[] };
+---
+<div class="bulles">
+  {items.map((it) => (
+    <div class="bulle">
+      <div class="entete">
+        <span class="numero">{it.n}</span>
+        <h3>{it.titre}</h3>
+      </div>
+      <p class="texte">{it.texte}</p>
+      <p class="exemples"><strong>Exemples&nbsp;:</strong> {it.exemples.join(" · ")}</p>
+    </div>
+  ))}
+</div>
+
+<style>
+  .bulles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.2rem 0;
+  }
+  .bulle {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    background: color-mix(in srgb, var(--bg) 92%, white 8%);
+  }
+  .entete { display: flex; align-items: center; gap: .6rem; margin-bottom: .5rem; }
+  .numero {
+    flex: 0 0 auto;
+    width: 1.6rem; height: 1.6rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 700;
+    font-size: .85rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .entete h3 { margin: 0; font-size: 1rem; color: var(--accent); }
+  .texte { margin: 0 0 .6rem; font-size: .88rem; color: var(--fg); line-height: 1.5; }
+  .exemples { margin: 0; font-size: .8rem; color: var(--muted); line-height: 1.4; }
+  .exemples strong { color: var(--fg); font-weight: 500; }
+
+  @media (max-width: 900px) {
+    .bulles { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .bulles { grid-template-columns: 1fr; }
+  }
+</style>

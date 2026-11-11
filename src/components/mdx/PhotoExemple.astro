@@ -1,0 +1,45 @@
+---
+// Une ou plusieurs photos d'exemple réel sous le texte d'une section, avec
+// légende et source. Utilisable dans une leçon .mdx :
+// <PhotoExemple photos={[{ src: "...", legende: "...", credit: "..." }]} />
+interface Photo {
+  src: string;
+  legende: string;
+  credit: string;
+}
+interface Props {
+  photos: Photo[];
+}
+const { photos = [] } = Astro.props as Props;
+---
+<div class="exemples-photo">
+  {photos.map((p) => (
+    <figure class="exemple">
+      <img src={p.src} alt={p.legende} loading="lazy" />
+      <figcaption>
+        <p class="legende">{p.legende}</p>
+        <p class="credit">{p.credit}</p>
+      </figcaption>
+    </figure>
+  ))}
+</div>
+
+<style>
+  .exemples-photo {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin: 0.8rem 0 1.6rem;
+  }
+  .exemple {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--bg) 92%, white 8%);
+  }
+  .exemple img { display: block; width: 100%; height: 170px; object-fit: cover; }
+  .exemple figcaption { padding: .6rem .8rem; border-top: 1px solid var(--line); }
+  .exemple .legende { margin: 0; font-size: .85rem; color: var(--fg); }
+  .exemple .credit { margin: .3rem 0 0; font-size: .68rem; color: var(--muted); line-height: 1.3; }
+</style>

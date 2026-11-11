@@ -1,0 +1,82 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import FicheEquation from "../../components/FicheEquation.astro";
+import { matieres } from "../../data/cours.js";
+import { equations } from "../../data/equations.js";
+
+// Uniquement les matières qui ont des fiches d'équations (pas "culture")
+const matieresAvecEquations = matieres.filter((m) => equations[m.id]?.length);
+---
+<Layout title="Fiches d'équations">
+  <p class="muted etape">Cours</p>
+  <h1>Fiches d'équations</h1>
+  <p class="intro">
+    Les formules essentielles, classées par matière puis par chapitre.
+    <span class="badge-exemple">Niveau intermédiaire</span> : équations simples (produit en croix, règles de puissances, logarithmes).
+    <span class="badge-exemple confirme">Niveau confirmé</span> : toutes les équations, y compris racines, trigonométrie et nombres complexes.
+  </p>
+
+  <div class="choix-matiere">
+    {matieresAvecEquations.map((m, i) => (
+      <button class="pill" data-matiere={m.id} aria-pressed={i === 0 ? "true" : "false"}>{m.nom}</button>
+    ))}
+  </div>
+
+  {matieresAvecEquations.map((m, i) => (
+    <section class="bloc-matiere" data-matiere={m.id} hidden={i !== 0}>
+      {equations[m.id].map((ch) => (
+        <div class="chapitre">
+          <h2>{ch.chapitre}</h2>
+          <div class="grille-fiches">
+            {ch.formules.map((f) => <FicheEquation {...f} />)}
+          </div>
+        </div>
+      ))}
+    </section>
+  ))}
+
+  <style>
+    .etape { margin: 2.5rem 0 .5rem; text-transform: uppercase; letter-spacing: .1em; font-size: .8rem; }
+    .intro { color: var(--muted); line-height: 1.7; max-width: 46rem; }
+
+    .badge-exemple {
+      display: inline-block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+      padding: .15rem .55rem; margin: 0 .1em;
+    }
+    .badge-exemple.confirme { color: var(--accent); border-color: var(--accent); }
+
+    .choix-matiere {
+      display: flex; flex-wrap: wrap; gap: .6rem;
+      margin: 2rem 0 2.5rem;
+    }
+    .pill {
+      font: inherit; font-size: .9rem; color: var(--muted); background: none; cursor: pointer;
+      border: 1px solid var(--line); border-radius: 999px; padding: .5rem 1.1rem;
+      transition: color .2s, border-color .2s;
+    }
+    .pill:hover { color: var(--fg); }
+    .pill[aria-pressed="true"] { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+
+    .chapitre { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
+    .chapitre:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+    .chapitre h2 { margin: 0 0 1.25rem; font-size: 1.3rem; font-weight: 400; }
+
+    .grille-fiches {
+      display: grid; gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    }
+  </style>
+
+  <script>
+    const $ = (s) => document.querySelectorAll(s);
+
+    $(".pill").forEach((b) =>
+      b.addEventListener("click", () => {
+        $(".pill").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+        $(".bloc-matiere").forEach((x) => (x.hidden = x.dataset.matiere !== b.dataset.matiere));
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      })
+    );
+  </script>
+</Layout>

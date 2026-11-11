@@ -2,12 +2,13 @@
 import Layout from "../../layouts/Layout.astro";
 import Audiometrie from "../../components/Audiometrie.astro";
 ---
-<Layout title="Audiométrie relative" description="Mesurez votre seuil de perception par tiers d'octave, de 1 kHz à 20 kHz, relativement à 1 kHz.">
+<Layout title="Audiométrie relative" description="Mesurez votre seuil de perception par octave ou tiers d'octave, de 125 Hz à 20 kHz, relativement à votre meilleure fréquence.">
   <a href="/applications" class="retour muted">← Applications</a>
   <h1>Audiométrie relative</h1>
   <p class="muted intro">
-    Où votre oreille perd-elle en sensibilité dans l'aigu ? Un test façon Békésy, par tiers d'octave,
-    qui donne une courbe relative à 1 kHz (pas une mesure en dB SPL).
+    Où votre oreille perd-elle en sensibilité ? Un test façon Békésy, sur les fréquences normalisées
+    (octaves ou tiers d'octave, ISO 266), qui donne une courbe relative à la fréquence la mieux perçue
+    (pas une mesure en dB SPL).
   </p>
 
   <Audiometrie />

@@ -80,7 +80,7 @@ import { materiel } from "../data/materiel.js";
 
   .defile { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
   table { border-collapse: collapse; width: 100%; font-size: .85rem; }
-  :global(.comparateur th), :global(.comparateur td) { padding: .5rem .7rem; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  :global(.comparateur th), :global(.comparateur td) { padding: .5rem .7rem; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--line); }
   :global(.comparateur thead th) { position: sticky; top: 0; background: var(--bg); color: var(--muted); font-weight: 400; font-size: .78rem; }
   :global(.comparateur .table th[data-key]) { cursor: pointer; user-select: none; }
   :global(.comparateur .table th[data-key]:hover) { color: var(--fg); }
@@ -90,7 +90,7 @@ import { materiel } from "../data/materiel.js";
   :global(.comparateur th.trie .icone-tri) { opacity: 1; }
   :global(.comparateur .table th[data-key]:hover .icone-tri) { opacity: .9; }
   :global(.comparateur .unite) { display: block; font-size: .7rem; opacity: .7; }
-  :global(.comparateur td.num) { text-align: right; font-variant-numeric: tabular-nums; }
+  :global(.comparateur td.num) { text-align: center; font-variant-numeric: tabular-nums; }
   :global(.comparateur td.vide) { color: var(--line); text-align: center; }
   :global(.comparateur .table tbody tr:hover) { background: rgba(255, 255, 255, .03); }
   :global(.comparateur .table tbody tr.choisi) { background: rgba(110, 231, 255, .07); }
@@ -223,6 +223,9 @@ import { materiel } from "../data/materiel.js";
     // ---------- Tableau principal ----------
     function dessinerTableau(lignes) {
       const cat = categorie();
+      // Colonnes marquées `tableau: false` (ex : impédance, F min/max, prix) : gardées pour le
+      // filtre prix, les axes du graphique et la comparaison détaillée, masquées ici seulement.
+      const colonnesTableau = cat.colonnes.filter((c) => c.tableau !== false);
       // Icône de tri en haut de chaque colonne : ⇅ (non trié), ▲ croissant, ▼ décroissant
       const fleche = (k) => `<span class="icone-tri" aria-hidden="true">${etat.tri.key === k ? (etat.tri.sens > 0 ? "▲" : "▼") : "⇅"}</span>`;
       const classeTri = (k) => (etat.tri.key === k ? "trie" : "");
@@ -230,14 +233,14 @@ import { materiel } from "../data/materiel.js";
         <thead><tr>
           <th></th>
           <th data-key="modele" class="${classeTri("modele")}" title="Trier par modèle"><span class="th-ligne">Modèle ${fleche("modele")}</span></th>
-          ${cat.colonnes.map((c) => `<th data-key="${c.key}" class="${classeTri(c.key)}" title="Trier par ${c.label.toLowerCase()}"><span class="th-ligne">${c.label} ${fleche(c.key)}</span>${c.unite ? `<span class="unite">${c.unite}</span>` : ""}</th>`).join("")}
+          ${colonnesTableau.map((c) => `<th data-key="${c.key}" class="${classeTri(c.key)}" title="Trier par ${c.label.toLowerCase()}"><span class="th-ligne">${c.label} ${fleche(c.key)}</span>${c.unite ? `<span class="unite">${c.unite}</span>` : ""}</th>`).join("")}
           <th>Fiche</th>
         </tr></thead>
         <tbody>${lignes.map((r) => `
           <tr data-id="${r.id}" class="${etat.choix.has(r.id) ? "choisi" : ""}">
             <td><input type="checkbox" ${etat.choix.has(r.id) ? "checked" : ""} aria-label="Comparer ${r.marque} ${r.modele}"></td>
             <td><span class="nom-modele">${r.modele}</span><br><span class="nom-marque">${r.marque}</span></td>
-            ${cat.colonnes.map((c) => `<td class="${c.num ? "num" : ""} ${r[c.key] == null ? "vide" : ""}">${afficher(r[c.key], c)}</td>`).join("")}
+            ${colonnesTableau.map((c) => `<td class="${c.num ? "num" : ""} ${r[c.key] == null ? "vide" : ""}">${afficher(r[c.key], c)}</td>`).join("")}
             <td class="${r.fiche ? "" : "vide"}">${r.fiche ? `<a href="${r.fiche}" target="_blank" rel="noopener noreferrer" class="lien-fiche">PDF</a>` : "—"}</td>
           </tr>`).join("")}
         </tbody>`;

@@ -1,0 +1,81 @@
+---
+// Schéma unique (image fournie par l'utilisateur) : une onde frappe un
+// obstacle, avec les 9 phénomènes sonores numérotés en surimpression.
+// Les détails (texte + exemples) sont donnés juste en dessous par
+// <BullesPhenomenes />, reliés aux mêmes numéros.
+interface Badge {
+  n: number;
+  left: number; // % de la largeur de l'image
+  top: number;  // % de la hauteur de l'image
+}
+
+const badges: Badge[] = [
+  { n: 1, left: 25, top: 50 }, // Atténuation géométrique (flèche incidente du haut)
+  { n: 2, left: 40, top: 75 }, // Réflexion (flèche qui repart en bas à gauche)
+  { n: 3, left: 45, top: 30 }, // Diffusion (petites flèches dispersées)
+  { n: 4, left: 64, top: 45 }, // Réfraction (flèche dans l'obstacle, axe différent)
+  { n: 5, left: 65, top: 64 }, // Absorption (dissipation à l'intérieur)
+  { n: 6, left: 87, top: 38 }, // Transmission (flèche qui ressort à droite)
+  { n: 7, left: 25, top: 58 }, // Sommation et interférences (seconde flèche incidente)
+  { n: 8, left: 58, top: 9 },  // Diffraction (flèche courbée sur le bord)
+  { n: 9, left: 66, top: 85 }, // Résonance (double flèche sur l'obstacle)
+];
+---
+<div class="schema-global">
+  <div class="schema-image-wrap">
+    <img
+      src="/images/phenomenes/schema-obstacle.png"
+      alt="Schéma d'une onde qui frappe un obstacle : flèches illustrant les 9 phénomènes sonores de base, numérotées de 1 à 9"
+      width="624"
+      height="427"
+    />
+    {badges.map((b) => (
+      <span class="badge" style={`left:${b.left}%; top:${b.top}%;`}>{b.n}</span>
+    ))}
+  </div>
+</div>
+
+<style>
+  .schema-global {
+    margin: 1.5rem 0;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--bg) 94%, white 6%);
+    padding: 0.75rem;
+  }
+  .schema-image-wrap {
+    position: relative;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .schema-image-wrap img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .badge {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #0a0f14;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  }
+  @media (max-width: 500px) {
+    .badge {
+      width: 1.4rem;
+      height: 1.4rem;
+      font-size: 0.72rem;
+    }
+  }
+</style>

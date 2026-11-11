@@ -1,6 +1,78 @@
 ---
 titre: "Phénomènes sonores de base"
 ordre: 3
+references:
+  - titre: "Acoustique du bâtiment"
+    url: "https://www.universalis.fr/dictionnaire/acoustique/"
+    description: "Encyclopædia Universalis — réflexion, absorption, diffusion, transmission"
 ---
+import SchemaGlobal from "../../../../components/mdx/SchemaGlobal.astro";
+import BullesPhenomenes from "../../../../components/mdx/BullesPhenomenes.astro";
 
-Cette leçon est en cours de rédaction. Revenez bientôt !
+Une onde sonore ne se contente pas de voyager en ligne droite jusqu'à ton oreille : elle rencontre des obstacles, change de milieu, se recombine avec d'autres ondes. Le schéma ci-dessous réunit les 9 phénomènes de base autour d'un obstacle générique — chaque numéro est détaillé juste en dessous.
+
+<SchemaGlobal />
+
+<BullesPhenomenes items={[
+  {
+    n: 1,
+    titre: "Atténuation géométrique",
+    texte: "En champ libre, l'énergie d'une onde issue d'une source ponctuelle se répartit sur une sphère de plus en plus grande à mesure qu'elle s'éloigne. Le niveau diminue d'environ 6 dB à chaque doublement de distance, même sans aucun obstacle.",
+    exemples: ["ronds dans l'eau", "voix qui faiblit avec la distance", "enceinte en plein air"],
+  },
+  {
+    n: 2,
+    titre: "Réflexion",
+    texte: "Face à une surface dure et lisse, grande devant la longueur d'onde, le son rebondit comme une balle : l'angle d'incidence est égal à l'angle de réflexion. C'est à l'origine de l'écho et, répétée de nombreuses fois dans une salle, de la réverbération.",
+    exemples: ["écho dans un canyon", "réverbération d'une cathédrale", "chambre anéchoïque (à l'inverse)"],
+  },
+  {
+    n: 3,
+    titre: "Diffusion",
+    texte: "Contrairement à une surface lisse qui réfléchit le son dans une seule direction, une surface irrégulière (ou de taille comparable à la longueur d'onde) le disperse dans de multiples directions. C'est recherché dans les salles de concert pour un son plus enveloppant.",
+    exemples: ["panneaux diffuseurs (QRD)", "étagères chargées de livres", "façade de salle de concert"],
+  },
+  {
+    n: 4,
+    titre: "Réfraction",
+    texte: "Quand une onde passe d'un milieu à un autre (ou d'une couche d'air à une autre, de température différente), sa vitesse change et sa direction de propagation se courbe. C'est ce qui explique qu'on entende parfois mieux un son au loin le soir qu'en pleine journée.",
+    exemples: ["mirage routier (analogie optique)", "son porté le soir au-dessus de l'eau", "sonar en thermocline"],
+  },
+  {
+    n: 5,
+    titre: "Absorption",
+    texte: "Une partie de l'énergie d'une onde qui rencontre un matériau est convertie en chaleur plutôt que renvoyée. Plus un matériau est absorbant, moins il réfléchit de son — c'est le principe des mousses et laines utilisées en correction acoustique.",
+    exemples: ["mousse acoustique de studio", "rideaux épais", "moquette, laine de verre"],
+  },
+  {
+    n: 6,
+    titre: "Transmission",
+    texte: "Quand une onde rencontre une paroi (un mur, une vitre), l'énergie se répartit en trois : une partie est réfléchie, une partie est absorbée par le matériau, et une partie est transmise de l'autre côté. C'est ce dernier phénomène qui explique qu'on entende la basse d'une fête à travers un mur, même isolé.",
+    exemples: ["basse qui traverse un mur", "mur anti-bruit d'autoroute", "vitrage acoustique"],
+  },
+  {
+    n: 7,
+    titre: "Sommation et interférences",
+    texte: "Quand plusieurs ondes se superposent, le résultat dépend de leur phase relative. En phase, les pressions s'additionnent (interférence constructive) ; en opposition de phase, elles s'annulent partiellement ou totalement (interférence destructive).",
+    exemples: ["zone de silence entre deux enceintes", "filtre en peigne", "battements de fréquences proches"],
+  },
+  {
+    n: 8,
+    titre: "Diffraction",
+    texte: "Une onde qui rencontre un obstacle ou une ouverture ne s'arrête pas net : elle se recourbe et continue à se propager derrière, dans une zone qui serait une ombre pour la lumière. Plus la longueur d'onde est grande devant l'obstacle, plus la diffraction est importante — c'est pourquoi les graves contournent facilement un mur, pas les aigus.",
+    exemples: ["grave qui contourne un mur", "voix entendue derrière une porte entrouverte", "son qui passe un coin de rue"],
+  },
+  {
+    n: 9,
+    titre: "Résonance",
+    texte: "Tout système mécanique (une corde, une colonne d'air, une pièce) possède une ou plusieurs fréquences propres auxquelles il vibre naturellement. Excité à l'une de ces fréquences, il entre en résonance : l'amplitude de vibration augmente fortement, même pour une excitation faible.",
+    exemples: ["tuyaux d'orgue", "verre qui chante", "mode propre d'une petite pièce"],
+  },
+]} />
+
+## À retenir
+
+- Une onde sonore interagit avec son environnement : elle peut être **réfléchie**, **absorbée**, **transmise**, **diffusée** ou **diffractée**.
+- Son niveau diminue avec la distance (**atténuation géométrique**), même sans obstacle.
+- Plusieurs ondes qui se recombinent peuvent se renforcer ou s'annuler (**sommation**, **interférences**).
+- Un système excité à sa fréquence propre entre en **résonance** et amplifie fortement sa vibration.

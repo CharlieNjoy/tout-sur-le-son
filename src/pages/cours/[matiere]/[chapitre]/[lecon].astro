@@ -1,0 +1,64 @@
+---
+// =====================================================================
+//  ROUTE GÉNÉRIQUE pour toutes les leçons, quel que soit le chapitre.
+//  Remplace l'ancien système d'un fichier [lecon].astro par chapitre.
+// =====================================================================
+import { getCollection, render } from "astro:content";
+import Layout from "../../../../layouts/Layout.astro";
+import LeconHeader from "../../../../components/LeconHeader.astro";
+import ReferencesLecon from "../../../../components/lecons/ReferencesLecon.astro";
+import { matieres } from "../../../../data/cours.js";
+import { slugify } from "../../../../data/lecons.js";
+
+export async function getStaticPaths() {
+  const toutes = await getCollection("lecons");
+
+  // Regroupe les leçons par (matière, chapitre), triées par ordre.
+  const groupes = new Map();
+  for (const e of toutes) {
+    const [matiereId, chapitreSlug] = e.id.split("/");
+    const cle = `${matiereId}/${chapitreSlug}`;
+    if (!groupes.has(cle)) groupes.set(cle, []);
+    groupes.get(cle).push(e);
+  }
+
+  const chemins = [];
+  for (const [cle, entrees] of groupes) {
+    const [matiereId, chapitreSlug] = cle.split("/");
+    const ici = entrees.slice().sort((a, b) => a.data.ordre - b.data.ordre);
+    ici.forEach((entree, i) => {
+      chemins.push({
+        params: { matiere: matiereId, chapitre: chapitreSlug, lecon: entree.id.split("/").pop() },
+        props: { entree, precedent: ici[i - 1] ?? null, suivant: ici[i + 1] ?? null, matiereId, chapitreSlug },
+      });
+    });
+  }
+  return chemins;
+}
+
+const { entree, precedent, suivant, matiereId, chapitreSlug } = Astro.props;
+const { Content } = await render(entree);
+
+const matiere = matieres.find((m) => m.id === matiereId);
+const numeroChapitre = matiere.chapitres.findIndex((c) => slugify(c.titre) === chapitreSlug) + 1;
+const chapitreTitre = matiere.chapitres[numeroChapitre - 1]?.titre ?? "";
+
+const base = `/cours/${matiereId}/${chapitreSlug}`;
+const urlDe = (e) => (e ? `${base}/${e.id.split("/").pop()}` : null);
+const numero = `${numeroChapitre}.${entree.data.ordre}`;
+---
+<Layout title={`${numero} ${entree.data.titre} — ${chapitreTitre}`}>
+  <LeconHeader
+    chapitreTitre={`${matiere.nom} · Chapitre ${numeroChapitre} · ${chapitreTitre}`}
+    titre={`${numero} ${entree.data.titre}`}
+    precedent={urlDe(precedent)}
+    suivant={urlDe(suivant)}
+    retour="/cours"
+  />
+
+  <div class="prose corps-lecon">
+    <Content />
+  </div>
+
+  <ReferencesLecon liens={entree.data.references} />
+</Layout>

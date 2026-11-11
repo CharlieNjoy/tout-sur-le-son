@@ -44,17 +44,21 @@ const CATEGORIES = [
       { key: "membrane", col: 3, label: "Membrane", f: libelle },
       { key: "directivite", col: 4, label: "Directivité", f: libelle },
       { key: "sensibilite", col: 5, label: "Sensibilité", unite: "dBV/Pa", num: true, mieux: "haut" },
-      { key: "z", col: 6, label: "Impédance", unite: "Ω", num: true, log: true },
-      { key: "fmin", col: 7, label: "F min", unite: "Hz", num: true, mieux: "bas", log: true },
-      { key: "fmax", col: 8, label: "F max", unite: "Hz", num: true, mieux: "haut", log: true },
+      // tableau: false → gardées pour le filtre prix, le graphique et la comparaison détaillée,
+      // mais masquées du tableau récapitulatif (jugées moins utiles au premier coup d'œil).
+      { key: "z", col: 6, label: "Impédance", unite: "Ω", num: true, log: true, tableau: false },
+      { key: "fmin", col: 7, label: "F min", unite: "Hz", num: true, mieux: "bas", log: true, tableau: false },
+      { key: "fmax", col: 8, label: "F max", unite: "Hz", num: true, mieux: "haut", log: true, tableau: false },
       { key: "bruit", col: 9, label: "Bruit propre", unite: "dB(A)", num: true, mieux: "bas" },
       { key: "splmax", col: 10, label: "SPL max", unite: "dB SPL", num: true, mieux: "haut" },
-      // Recalculés à partir du bruit et du SPL max (conventions de l'onglet INFOS)
-      { key: "snr", label: "Rapport S/B", unite: "dB", num: true, mieux: "haut",
+      // Recalculés à partir du bruit et du SPL max (conventions de l'onglet INFOS).
+      // tableau: false → gardés pour le graphique/comparaison, masqués du récap (se retrouvent
+      // facilement à partir du bruit propre et du SPL max, déjà affichés).
+      { key: "snr", label: "Rapport S/B", unite: "dB", num: true, mieux: "haut", tableau: false,
         calc: (r) => (r.bruit != null ? 94 - r.bruit : null) },
-      { key: "dynamique", label: "Dynamique", unite: "dB", num: true, mieux: "haut",
+      { key: "dynamique", label: "Dynamique", unite: "dB", num: true, mieux: "haut", tableau: false,
         calc: (r) => (r.bruit != null && r.splmax != null ? r.splmax - r.bruit : null) },
-      { key: "prix", col: 13, label: "Prix", unite: "€", num: true, mieux: "bas", log: true },
+      { key: "prix", col: 13, label: "Prix", unite: "€", num: true, mieux: "bas", log: true, tableau: false },
     ],
   },
   {
@@ -106,6 +110,34 @@ const CATEGORIES = [
       { key: "ein", col: 15, label: "EIN", unite: "dBu", num: true, mieux: "bas" },
       { key: "annee", col: 16, label: "Année", num: true },
       { key: "prix", col: 17, label: "Prix", unite: "€", num: true, mieux: "bas", log: true },
+    ],
+  },
+  {
+    id: "amplis", nom: "Amplis de puissance", onglet: "AMPLIS", ficheCol: 9,
+    colonnes: [
+      { key: "voies", col: 2, label: "Nombre de sorties", num: true },
+      // Une colonne par type de puissance réellement publié (charge et/ou mode pontés) :
+      // tous les fabricants n'indiquent pas les mêmes, les colonnes vides sont masquées automatiquement.
+      { key: "p8", col: 3, label: "Puissance / sortie à 8 Ω", unite: "W", num: true, mieux: "haut", log: true },
+      { key: "p4", col: 4, label: "Puissance / sortie à 4 Ω", unite: "W", num: true, mieux: "haut", log: true },
+      { key: "p2", col: 5, label: "Puissance / sortie à 2 Ω", unite: "W", num: true, mieux: "haut", log: true },
+      { key: "pponte", col: 6, label: "Puissance pontée (mono, 4 Ω)", unite: "W", num: true, mieux: "haut", log: true },
+      { key: "zmin", col: 7, label: "Impédance mini", unite: "Ω", num: true, mieux: "bas" },
+      { key: "prix", col: 8, label: "Prix", unite: "€", num: true, mieux: "bas", log: true },
+    ],
+  },
+  {
+    id: "cartesson", nom: "Cartes son", onglet: "CARTES SON", ficheCol: 11,
+    colonnes: [
+      { key: "entrees", col: 2, label: "Entrées analogiques", num: true },
+      { key: "sorties", col: 3, label: "Sorties analogiques", num: true },
+      { key: "freqmax", col: 4, label: "Fréq. éch. max", unite: "kHz", num: true, mieux: "haut" },
+      { key: "bits", col: 5, label: "Résolution max", unite: "bits", num: true, mieux: "haut" },
+      { key: "drad", col: 6, label: "Dynamique A/D", unite: "dBA", num: true, mieux: "haut" },
+      { key: "drda", col: 7, label: "Dynamique D/A", unite: "dBA", num: true, mieux: "haut" },
+      { key: "gainmax", col: 8, label: "Gain préampli max", unite: "dB", num: true, mieux: "haut" },
+      { key: "connectivite", col: 9, label: "Connectivité", f: texte },
+      { key: "prix", col: 10, label: "Prix", unite: "€", num: true, mieux: "bas", log: true },
     ],
   },
 ];

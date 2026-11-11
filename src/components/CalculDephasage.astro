@@ -1,0 +1,142 @@
+---
+// =====================================================================
+//  CALCULATEUR DÉPHASAGE / RETARD / DISTANCE
+//  Convertit entre distance, retard temporel et déphasage pour une
+//  fréquence donnée, et trace la réponse en fréquence du filtrage en
+//  peigne (comb filtering) produit par deux sources identiques décalées
+//  de ce retard.
+//  Formules : voir fiches d'équations (Acoustique > Signaux / L'onde sonore).
+// =====================================================================
+import "../styles/applis.css";
+
+const C = 343; // célérité du son, m/s
+---
+<div class="appli calcul-dephasage">
+  <div class="reglages">
+    <label>
+      <span class="nom">Fréquence <strong id="val-frequence"></strong></span>
+      <input type="range" id="frequence" min="20" max="20000" step="1" value="1000" />
+    </label>
+    <label>
+      <span class="nom">Distance entre les deux trajets <strong id="val-distance"></strong></span>
+      <input type="range" id="distance" min="0" max="10" step="0.001" value="0.1" />
+    </label>
+  </div>
+
+  <dl class="mesures">
+    <div>
+      <dt>Retard</dt>
+      <dd id="res-retard">—</dd>
+    </div>
+    <div>
+      <dt>Déphasage à cette fréquence</dt>
+      <dd id="res-phase">—</dd>
+    </div>
+    <div>
+      <dt>Interférence à cette fréquence</dt>
+      <dd id="res-interference">—</dd>
+    </div>
+  </dl>
+
+  <div class="ecran">
+    <p class="ecran-titre">Réponse en fréquence du filtrage en peigne (deux sources de même niveau)</p>
+    <canvas id="courbe" width="800" height="240"></canvas>
+    <span class="axe gauche muted">20 Hz</span>
+    <span class="axe droite muted">20 kHz</span>
+  </div>
+
+  <p class="note">
+    Deux signaux identiques décalés d'un retard Δt s'additionnent ou s'annulent selon la fréquence :
+    renforcement (+6 dB) quand le retard correspond à un nombre entier de périodes, annulation quand il
+    correspond à une demi-période impaire. C'est le phénomène du filtrage en peigne, responsable des creux
+    qu'on entend en combinant un micro direct et une réflexion, ou deux micros sur une même source.
+  </p>
+</div>
+
+<style>
+  .calcul-dephasage .mesures dd { color: var(--accent); }
+</style>
+
+<script>
+  const C = 343;
+  const $ = (id) => document.getElementById(id);
+
+  const frequence = $("frequence");
+  const distance = $("distance");
+  const canvas = $("courbe");
+  const ctx = canvas.getContext("2d");
+
+  function formatFreq(f) {
+    return f >= 1000 ? `${(f / 1000).toFixed(f % 1000 === 0 ? 0 : 1)} kHz` : `${f} Hz`;
+  }
+
+  function dessiner(fSelection, dt) {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const fMin = 20, fMax = 20000;
+    const xDe = (f) => ((Math.log10(f) - Math.log10(fMin)) / (Math.log10(fMax) - Math.log10(fMin))) * W;
+
+    // Grille horizontale (0 dB, +6 dB, et le plancher à -40 dB)
+    ctx.strokeStyle = "#26262b";
+    ctx.lineWidth = 1;
+    const yDe = (db) => H / 2 - (db / 12) * (H / 2 - 10);
+    [-6, 0, 6].forEach((db) => {
+      ctx.beginPath();
+      ctx.moveTo(0, yDe(db));
+      ctx.lineTo(W, yDe(db));
+      ctx.stroke();
+    });
+
+    // Courbe du peigne : 20·log10(2·|cos(π·f·Δt)|)
+    ctx.strokeStyle = "#6ee7ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = 0; x <= W; x++) {
+      const f = fMin * Math.pow(fMax / fMin, x / W);
+      const db = 20 * Math.log10(2 * Math.abs(Math.cos(Math.PI * f * dt)) + 1e-6);
+      const y = yDe(Math.max(-12, Math.min(6, db)));
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Marqueur de la fréquence choisie
+    const xSel = xDe(fSelection);
+    ctx.strokeStyle = "#f2f2f2";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xSel, 0);
+    ctx.lineTo(xSel, H);
+    ctx.stroke();
+  }
+
+  function calculer() {
+    const f = parseFloat(frequence.value);
+    const d = parseFloat(distance.value);
+    const dt = d / C;
+    const periode = 1 / f;
+    const phaseDeg = ((dt / periode) * 360) % 360;
+
+    $("val-frequence").textContent = formatFreq(f);
+    $("val-distance").textContent = `${(d * 100).toFixed(1)} cm`;
+    $("res-retard").textContent = dt < 0.001 ? `${(dt * 1e6).toFixed(0)} µs` : `${(dt * 1000).toFixed(3)} ms`;
+    $("res-phase").textContent = `${phaseDeg.toFixed(0)}°`;
+
+    const ecart = Math.min(phaseDeg % 360, 360 - (phaseDeg % 360));
+    const interference = $("res-interference");
+    if (ecart < 15) {
+      interference.textContent = "Renforcement quasi total (+6 dB)";
+    } else if (ecart > 165) {
+      interference.textContent = "Annulation quasi totale (creux profond)";
+    } else if (ecart < 90) {
+      interference.textContent = "Renforcement partiel";
+    } else {
+      interference.textContent = "Atténuation partielle";
+    }
+
+    dessiner(f, dt);
+  }
+
+  [frequence, distance].forEach((el) => el.addEventListener("input", calculer));
+  calculer();
+</script>

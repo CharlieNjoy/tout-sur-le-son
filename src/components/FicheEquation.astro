@@ -1,0 +1,84 @@
+---
+// =====================================================================
+//  FICHE D'ÉQUATION — une carte par formule.
+//
+//  Props :
+//    nom       : nom de la formule (ex. "Loi de Sabine")
+//    niveau    : "intermediaire" | "confirme" — étiquette affichée
+//    formule   : HTML de l'expression (set:html — contenu de confiance,
+//                écrit à la main dans data/equations.js). Utiliser le
+//                composant Fraction pour une barre de fraction, et les
+//                balises <sup>/<sub> pour exposants/indices.
+//    variables : [{ symbole, description, unite? }]
+//    note      : texte optionnel (condition de validité, remarque)
+// =====================================================================
+const { nom, niveau = "intermediaire", formule, variables = [], note } = Astro.props;
+const labelNiveau = niveau === "confirme" ? "Niveau confirmé" : "Niveau intermédiaire";
+---
+<div class="fiche-equation" data-niveau={niveau}>
+  <div class="entete">
+    <p class="nom">{nom}</p>
+    <span class="badge">{labelNiveau}</span>
+  </div>
+
+  <div class="expression" set:html={formule} />
+
+  {variables.length > 0 && (
+    <dl class="variables">
+      {variables.map((v) => (
+        <>
+          <dt set:html={v.symbole} />
+          <dd>{v.description}{v.unite ? <span class="unite"> ({v.unite})</span> : null}</dd>
+        </>
+      ))}
+    </dl>
+  )}
+
+  {note && <p class="note muted">{note}</p>}
+</div>
+
+<style>
+  .fiche-equation {
+    padding: 1.25rem 1.4rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    display: grid;
+    gap: .9rem;
+    transition: border-color .2s;
+  }
+  .fiche-equation:hover { border-color: var(--accent); }
+
+  .entete { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; }
+  .nom { margin: 0; font-size: 1rem; font-weight: 500; }
+
+  .badge {
+    font-size: .68rem; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+    padding: .2rem .6rem; white-space: nowrap;
+  }
+  .fiche-equation[data-niveau="confirme"] .badge { color: var(--accent); border-color: var(--accent); }
+
+  .expression {
+    font-family: "Cambria Math", Cambria, "Times New Roman", serif;
+    font-style: italic;
+    font-size: 1.3rem;
+    text-align: center;
+    padding: .6rem 0;
+    color: var(--fg);
+    overflow-x: auto;
+  }
+  .expression :global(sup), .expression :global(sub) { font-style: normal; }
+
+  .variables {
+    margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .35rem .75rem;
+    font-size: .85rem;
+  }
+  .variables dt {
+    font-family: "Cambria Math", Cambria, serif; font-style: italic;
+    color: var(--accent); text-align: right;
+  }
+  .variables dd { margin: 0; color: var(--muted); }
+  .variables .unite { color: var(--line); }
+
+  .note { margin: 0; font-size: .82rem; line-height: 1.5; }
+</style>

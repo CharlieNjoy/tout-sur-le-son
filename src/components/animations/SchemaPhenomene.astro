@@ -1,0 +1,396 @@
+---
+// Petit schéma animé pour illustrer un phénomène acoustique de base.
+// Utilisable dans une leçon .mdx : <SchemaPhenomene type="absorption" legende="..." />
+// Types disponibles : absorption, attenuation, sommation, diffusion, diffraction,
+// refraction, reflexion, transmission, resonance, interferences
+const { type, legende = "" } = Astro.props;
+---
+<figure class="ecran-anim">
+  <canvas class="anim-phenomene" data-type={type}></canvas>
+  {legende && <figcaption>{legende}</figcaption>}
+</figure>
+
+<style>
+  .ecran-anim { margin: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .ecran-anim canvas { display: block; width: 100%; height: 190px; }
+  .ecran-anim figcaption {
+    padding: .6rem .9rem;
+    border-top: 1px solid var(--line);
+    font-size: .82rem;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+
+<script>
+  function couleurs() {
+    const css = getComputedStyle(document.documentElement);
+    const lire = (v) => css.getPropertyValue(v).trim();
+    return { accent: lire("--accent"), ligne: lire("--line"), gris: lire("--muted"), fond: lire("--bg") };
+  }
+
+  // ----- Petits utilitaires de dessin -----
+  function anneau(ctx, cx, cy, r, alpha, coul) {
+    if (alpha <= 0 || r <= 0) return;
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = coul;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  function hachures(ctx, x, y, w, h, coul) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    ctx.strokeStyle = coul;
+    ctx.globalAlpha = 0.5;
+    ctx.lineWidth = 1;
+    for (let i = -h; i < w; i += 7) {
+      ctx.beginPath();
+      ctx.moveTo(x + i, y + h);
+      ctx.lineTo(x + i + h, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+  function point(ctx, x, y, r, coul, alpha = 1) {
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = coul;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // ----- Un dessinateur par phénomène : (ctx, w, h, t, coul) -----
+  const DESSINATEURS = {
+    absorption(ctx, w, h, t, coul) {
+      const mur = w * 0.66, epaisseur = w - mur - 10;
+      hachures(ctx, mur, 10, epaisseur, h - 20, coul.gris);
+      ctx.strokeStyle = coul.gris; ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
+      ctx.strokeRect(mur, 10, epaisseur, h - 20);
+      ctx.globalAlpha = 1;
+
+      const src = w * 0.14, cy = h / 2;
+      point(ctx, src, cy, 4, coul.accent);
+
+      const PERIODE = 2.4;
+      const distance = mur - src;
+      for (let k = 0; k < 3; k++) {
+        const phase = (((t / PERIODE) + k / 3) % 1);
+        const r = phase * distance;
+        if (r < distance) {
+          // l'onde avance jusqu'au mur, puis s'arrête net : presque rien n'en ressort
+          anneau(ctx, src, cy, r, 0.6 * (1 - phase * 0.5), coul.accent);
+        }
+        // juste avant/au moment de toucher le mur : petites dissipations internes
+        const atteint = r >= distance - 10 && r <= distance + 6;
+        if (atteint) {
+          const local = Math.random();
+          for (let j = 0; j < 4; j++) {
+            const mx = mur + 6 + Math.random() * (epaisseur - 12);
+            const my = 16 + Math.random() * (h - 32);
+            point(ctx, mx, my, 1.4 + Math.random() * 1.6, coul.gris, 0.35 + local * 0.25);
+          }
+        }
+      }
+    },
+
+    attenuation(ctx, w, h, t, coul) {
+      const cx = w / 2, cy = h / 2;
+      const PERIODE = 2.4;
+      const rmax = Math.max(w, h) * 0.6;
+      for (let k = 0; k < 4; k++) {
+        const phase = ((t / PERIODE + k / 4) % 1);
+        const r = phase * rmax;
+        const alpha = Math.max(0, 0.7 * (1 - phase) * (1 - phase));
+        anneau(ctx, cx, cy, r, alpha, coul.accent);
+      }
+      point(ctx, cx, cy, 4, coul.accent);
+    },
+
+    sommation(ctx, w, h, t, coul) {
+      const trace = (y, amp, coul2, alpha) => {
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = coul2;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        for (let x = 0; x <= w; x += 4) {
+          const yy = y + Math.sin((x / 26) - t * 2.4) * amp;
+          x === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      };
+      // Deux sources identiques, en phase…
+      trace(h * 0.22, 9, coul.gris, 0.85);
+      trace(h * 0.46, 9, coul.gris, 0.85);
+      // … s'additionnent en une onde deux fois plus forte.
+      trace(h * 0.78, 18, coul.accent, 0.95);
+    },
+
+    diffusion(ctx, w, h, t, coul) {
+      const surf = w * 0.62;
+      // surface irrégulière
+      ctx.strokeStyle = coul.gris; ctx.globalAlpha = 0.6; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let y = 10; y <= h - 10; y += 1) {
+        const x = surf + Math.sin(y * 0.6) * 5;
+        y === 10 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      point(ctx, w * 0.16, h / 2, 4, coul.accent);
+      const PERIODE = 2.2;
+      const phase = (t / PERIODE) % 1;
+      const r = phase * (surf - w * 0.16);
+      if (phase < 0.92) anneau(ctx, w * 0.16, h / 2, r, 0.5 * (1 - phase), coul.accent);
+
+      if (phase > 0.55) {
+        const eclat = Math.min(1, (phase - 0.55) / 0.35);
+        const angles = [-0.9, -0.5, -0.15, 0.15, 0.5, 0.9];
+        for (const a of angles) {
+          const lx = surf + Math.sin(h / 2 * 0.6) * 5;
+          const x2 = lx + Math.cos(a) * 34 * eclat;
+          const y2 = h / 2 + Math.sin(a) * 34 * eclat;
+          ctx.globalAlpha = 0.5 * (1 - eclat * 0.6);
+          ctx.strokeStyle = coul.accent;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.moveTo(lx, h / 2); ctx.lineTo(x2, y2); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+    },
+
+    diffraction(ctx, w, h, t, coul) {
+      const mur = w * 0.48;
+      const gap = h * 0.5, demiGap = 13;
+      ctx.strokeStyle = coul.gris; ctx.globalAlpha = 0.7; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(mur, 8); ctx.lineTo(mur, gap - demiGap); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mur, gap + demiGap); ctx.lineTo(mur, h - 8); ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // ondes planes arrivant par la gauche
+      const PERIODE = 1.8, ESPACEMENT = 22;
+      for (let k = 0; k < 6; k++) {
+        const x = ((t * 55 + k * ESPACEMENT) % (mur + ESPACEMENT)) - ESPACEMENT + 4;
+        if (x < 0 || x > mur) continue;
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = coul.accent; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.moveTo(x, 8); ctx.lineTo(x, h - 8); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      // ondes circulaires après la fente (diffractées dans l'ombre du mur)
+      for (let k = 0; k < 3; k++) {
+        const phase = (((t * 55) / 90 + k / 3) % 1);
+        const r = phase * (w - mur);
+        anneau(ctx, mur, gap, r, 0.55 * (1 - phase), coul.accent);
+      }
+    },
+
+    refraction(ctx, w, h, t, coul) {
+      const frontiere = h * 0.55;
+      ctx.fillStyle = coul.gris; ctx.globalAlpha = 0.07;
+      ctx.fillRect(0, frontiere, w, h - frontiere);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = coul.ligne; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, frontiere); ctx.lineTo(w, frontiere); ctx.stroke();
+
+      // Point d'entrée dans le second milieu, et angles marqués par rapport à la normale
+      // (franc changement d'angle : on s'écarte beaucoup de la normale avant,
+      // on s'en rapproche beaucoup après — milieu plus « lent »).
+      const px = w * 0.46, py = frontiere;
+      const a1 = (58 * Math.PI) / 180; // angle du rayon incident / normale
+      const a2 = (24 * Math.PI) / 180; // angle du rayon réfracté / normale (plus proche de la normale)
+      const L1 = frontiere / Math.cos(a1);
+      const L2 = (h - frontiere) / Math.cos(a2);
+      const dir1 = { x: Math.sin(a1), y: Math.cos(a1) };   // avant la frontière (vers le bas-droite)
+      const dir2 = { x: Math.sin(a2), y: Math.cos(a2) };   // après la frontière
+
+      // normale (pointillés)
+      ctx.strokeStyle = coul.ligne; ctx.setLineDash([3, 3]); ctx.lineWidth = 1; ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.moveTo(px, py - 34); ctx.lineTo(px, py + 34); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+
+      // rayon complet (repère discret)
+      ctx.strokeStyle = coul.gris; ctx.globalAlpha = 0.45; ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(px - dir1.x * L1, py - dir1.y * L1);
+      ctx.lineTo(px, py);
+      ctx.lineTo(px + dir2.x * L2, py + dir2.y * L2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Train d'ondes : plusieurs petits fronts perpendiculaires au rayon, qui défilent.
+      // Espacement plus grand avant la frontière (milieu « rapide »), plus petit après
+      // (milieu « lent ») : la longueur d'onde diminue en entrant dans le second milieu.
+      const dessinerTrain = (dir, L, espacement, versFrontiere, decalage) => {
+        const perp = { x: -dir.y, y: dir.x };
+        for (let k = -1; k < 7; k++) {
+          const s = ((k * espacement + decalage) % (espacement * 7) + espacement * 7) % (espacement * 7);
+          if (s > L) continue;
+          const d = versFrontiere ? L - s : s; // distance depuis px,py le long de -dir ou +dir
+          const bx = px + (versFrontiere ? -dir.x : dir.x) * d;
+          const by = py + (versFrontiere ? -dir.y : dir.y) * d;
+          const alpha = 0.75 * Math.max(0, 1 - Math.abs(s - L / 2) / (L / 2) * 0.4);
+          ctx.globalAlpha = alpha;
+          ctx.strokeStyle = coul.accent; ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.moveTo(bx - perp.x * 9, by - perp.y * 9);
+          ctx.lineTo(bx + perp.x * 9, by + perp.y * 9);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      };
+
+      const vitesse = 42; // px/s, commune aux deux milieux (c'est l'espacement qui change)
+      dessinerTrain(dir1, L1, 16, true, t * vitesse);
+      dessinerTrain(dir2, L2, 9, false, t * vitesse);
+    },
+
+    reflexion(ctx, w, h, t, coul) {
+      const sol = h - 14;
+      ctx.strokeStyle = coul.gris; ctx.globalAlpha = 0.7; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(8, sol); ctx.lineTo(w - 8, sol); ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      const xi = w * 0.22, xc = w * 0.5, xo = w * 0.78, haut = 14;
+      ctx.strokeStyle = coul.gris; ctx.globalAlpha = 0.6; ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(xi, haut); ctx.lineTo(xc, sol); ctx.lineTo(xo, haut);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      // normale
+      ctx.strokeStyle = coul.ligne; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(xc, sol); ctx.lineTo(xc, haut); ctx.stroke();
+      ctx.setLineDash([]);
+
+      const PERIODE = 2.2;
+      const phase = (t / PERIODE) % 1;
+      let x, y;
+      if (phase < 0.5) {
+        const p = phase / 0.5; x = xi + (xc - xi) * p; y = haut + (sol - haut) * p;
+      } else {
+        const p = (phase - 0.5) / 0.5; x = xc + (xo - xc) * p; y = sol + (haut - sol) * p;
+      }
+      point(ctx, x, y, 4, coul.accent);
+    },
+
+    transmission(ctx, w, h, t, coul) {
+      const mur = w * 0.46, epaisseur = 16;
+      point(ctx, w * 0.12, h / 2, 4, coul.accent);
+
+      const PERIODE = 2.4;
+      for (let k = 0; k < 3; k++) {
+        const phase = ((t / PERIODE + k / 3) % 1);
+        const r = phase * (mur - w * 0.12);
+        anneau(ctx, w * 0.12, h / 2, r, 0.5 * (1 - phase), coul.accent);
+        // partie réfléchie, plus faible, repart vers la gauche
+        if (phase > 0.3) {
+          const p2 = (phase - 0.3) / 0.7;
+          anneau(ctx, w * 0.12, h / 2, (mur - w * 0.12) * (1 - p2) * 0.5, 0.22 * (1 - p2), coul.gris);
+        }
+      }
+
+      ctx.fillStyle = coul.gris; ctx.globalAlpha = 0.35;
+      ctx.fillRect(mur, 10, epaisseur, h - 20);
+      ctx.globalAlpha = 1;
+
+      // partie transmise, plus faible, continue à droite
+      for (let k = 0; k < 2; k++) {
+        const phase = ((t / PERIODE + k / 2) % 1);
+        const r = phase * (w - mur - epaisseur);
+        anneau(ctx, mur + epaisseur, h / 2, r, 0.3 * (1 - phase), coul.accent);
+      }
+    },
+
+    resonance(ctx, w, h, t, coul) {
+      // Un tube ouvert aux deux bouts : un front d'onde unique entre à gauche,
+      // le tube se met à résonner et émet des ondes périodiques par la droite.
+      const xg = w * 0.32, xd = w * 0.7, y1 = h * 0.34, y2 = h * 0.66, cy = h / 2;
+
+      ctx.strokeStyle = coul.gris; ctx.globalAlpha = 0.75; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(xg, y1); ctx.lineTo(xd, y1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(xg, y2); ctx.lineTo(xd, y2); ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      const PERIODE = 3.2;
+      const phase = (t % PERIODE) / PERIODE;
+
+      // Phase 1 (0 → 0,22) : un seul front d'onde approche par la gauche et entre dans le tube
+      if (phase < 0.26) {
+        const p = Math.min(1, phase / 0.22);
+        const x = w * 0.04 + (xg - w * 0.04) * p;
+        ctx.globalAlpha = 0.7 * (1 - p * 0.3);
+        ctx.strokeStyle = coul.accent; ctx.lineWidth = 1.8;
+        ctx.beginPath(); ctx.moveTo(x, y1 - 6); ctx.lineTo(x, y2 + 6); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      // Phase 2 (0,20 → 1) : le tube résonne, il émet des ondes périodiques par la droite
+      if (phase > 0.2) {
+        const fenetre = Math.min(1, (phase - 0.2) / 0.12) * Math.max(0, Math.min(1, (1 - phase) / 0.12));
+        const sousPeriode = 0.42;
+        for (let k = 0; k < 4; k++) {
+          const sp = (((t / sousPeriode) + k / 4) % 1);
+          const r = sp * (w - xd) * 1.3;
+          anneau(ctx, xd, cy, r, 0.6 * (1 - sp) * Math.max(fenetre, 0.55), coul.accent);
+        }
+      }
+
+      // petit repère d'oscillation interne, au centre du tube
+      const vibre = phase > 0.18 ? Math.sin(t * 16) * Math.min(1, (phase - 0.18) * 6) * 5 : 0;
+      point(ctx, (xg + xd) / 2, cy + vibre, 3, coul.accent, 0.8);
+    },
+
+    interferences(ctx, w, h, t, coul) {
+      const y1 = h * 0.4, y2 = h * 0.6, x0 = w * 0.14;
+      point(ctx, x0, y1, 3.5, coul.accent);
+      point(ctx, x0, y2, 3.5, coul.accent);
+
+      const PERIODE = 2.6, rmax = Math.max(w, h) * 0.75;
+      for (let k = 0; k < 5; k++) {
+        const phase = ((t / PERIODE + k / 5) % 1);
+        const r = phase * rmax;
+        const alpha = 0.5 * (1 - phase);
+        anneau(ctx, x0, y1, r, alpha, coul.accent);
+        anneau(ctx, x0, y2, r, alpha, coul.accent);
+      }
+    },
+  };
+
+  function demarrer(canvas) {
+    const type = canvas.dataset.type;
+    const dessiner1 = DESSINATEURS[type];
+    if (!dessiner1) return;
+    const ctx = canvas.getContext("2d");
+    let coul = couleurs();
+
+    function redim() {
+      const r = canvas.getBoundingClientRect();
+      canvas.width = r.width * devicePixelRatio;
+      canvas.height = r.height * devicePixelRatio;
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      coul = couleurs();
+    }
+    new ResizeObserver(redim).observe(canvas);
+    redim();
+
+    const depart = performance.now();
+    function boucle(maintenant) {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+      dessiner1(ctx, w, h, (maintenant - depart) / 1000, coul);
+      requestAnimationFrame(boucle);
+    }
+    requestAnimationFrame(boucle);
+  }
+
+  document.querySelectorAll(".anim-phenomene").forEach(demarrer);
+</script>

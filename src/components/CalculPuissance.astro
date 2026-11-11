@@ -1,0 +1,98 @@
+---
+// =====================================================================
+//  CALCULATEUR PUISSANCE AMPLI / ENCEINTE
+//  Headroom, SPL max à 1 m et SPL max à la distance d'écoute.
+//  Formules : voir fiches d'équations (Technologie > Amplification / Haut-parleurs).
+// =====================================================================
+import "../styles/applis.css";
+---
+<div class="appli calcul-puissance">
+  <div class="reglages">
+    <label>
+      <span class="nom">Puissance ampli / canal <strong id="val-pampli"></strong></span>
+      <input type="range" id="pampli" min="1" max="2000" step="1" value="200" />
+    </label>
+    <label>
+      <span class="nom">Puissance admissible enceinte (RMS) <strong id="val-penceinte"></strong></span>
+      <input type="range" id="penceinte" min="1" max="2000" step="1" value="200" />
+    </label>
+    <label>
+      <span class="nom">Sensibilité enceinte <strong id="val-sensibilite"></strong></span>
+      <input type="range" id="sensibilite" min="80" max="112" step="0.5" value="96" />
+    </label>
+    <label>
+      <span class="nom">Distance d'écoute <strong id="val-distance"></strong></span>
+      <input type="range" id="distance" min="0.5" max="30" step="0.5" value="3" />
+    </label>
+  </div>
+
+  <dl class="mesures">
+    <div>
+      <dt>Headroom (ampli / enceinte)</dt>
+      <dd id="res-headroom">—</dd>
+    </div>
+    <div>
+      <dt>SPL max théorique à 1 m</dt>
+      <dd id="res-spl1m">—</dd>
+    </div>
+    <div>
+      <dt>SPL max théorique à la distance d'écoute</dt>
+      <dd id="res-spldist">—</dd>
+    </div>
+  </dl>
+
+  <p class="note" id="res-note"></p>
+
+  <p class="note">
+    Hypothèses : champ libre (atténuation de 6 dB par doublement de distance), aucune perte de câble,
+    aucune autre source dans la pièce. En intérieur, la réverbération relève le niveau réel aux distances
+    importantes par rapport à cette estimation.
+  </p>
+</div>
+
+<style>
+  .calcul-puissance .mesures dd { color: var(--accent); }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  const pampli = $("pampli");
+  const penceinte = $("penceinte");
+  const sensibilite = $("sensibilite");
+  const distance = $("distance");
+
+  function calculer() {
+    const Pa = parseFloat(pampli.value);
+    const Pe = parseFloat(penceinte.value);
+    const S = parseFloat(sensibilite.value);
+    const d = parseFloat(distance.value);
+
+    document.getElementById("val-pampli").textContent = `${Pa} W`;
+    document.getElementById("val-penceinte").textContent = `${Pe} W`;
+    document.getElementById("val-sensibilite").textContent = `${S.toFixed(1)} dB (1 W / 1 m)`;
+    document.getElementById("val-distance").textContent = `${d} m`;
+
+    const headroom = 10 * Math.log10(Pa / Pe);
+    const spl1m = S + 10 * Math.log10(Pa);
+    const spldist = spl1m - 20 * Math.log10(Math.max(d, 1));
+
+    document.getElementById("res-headroom").textContent = `${headroom >= 0 ? "+" : ""}${headroom.toFixed(1)} dB`;
+    document.getElementById("res-spl1m").textContent = `${spl1m.toFixed(1)} dB SPL`;
+    document.getElementById("res-spldist").textContent = `${spldist.toFixed(1)} dB SPL`;
+
+    const note = document.getElementById("res-note");
+    if (headroom < -1) {
+      note.textContent = "⚠️ L'ampli est plus faible que l'enceinte : risque de clipping à pleine puissance, souvent plus destructeur pour un haut-parleur qu'un léger surdimensionnement de l'ampli.";
+    } else if (headroom <= 3) {
+      note.textContent = "✓ Bon compromis : l'ampli peut atteindre la pleine puissance de l'enceinte avec une marge raisonnable avant clipping.";
+    } else if (headroom <= 6) {
+      note.textContent = "✓ Bonne marge de headroom : l'ampli ne clippera pas avant que l'enceinte atteigne ses limites.";
+    } else {
+      note.textContent = "⚠️ Marge très large : à pleine puissance de l'ampli, l'enceinte peut être endommagée. Rester prudent sur le gain.";
+    }
+  }
+
+  [pampli, penceinte, sensibilite, distance].forEach((el) => el.addEventListener("input", calculer));
+  calculer();
+</script>

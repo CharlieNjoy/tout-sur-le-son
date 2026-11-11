@@ -1,0 +1,17 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import CalculPuissance from "../../components/CalculPuissance.astro";
+---
+<Layout title="Puissance ampli / enceinte" description="Headroom et SPL théorique en fonction de la puissance de l'ampli, de l'enceinte et de la distance d'écoute.">
+  <a href="/applications" class="retour muted">← Applications</a>
+  <h1>Puissance ampli / enceinte</h1>
+  <p class="muted intro">Headroom et SPL théorique en fonction de la puissance de l'ampli, de l'enceinte et de la distance d'écoute.</p>
+
+  <CalculPuissance />
+
+  <style>
+    .retour { display: inline-block; margin-bottom: 1.5rem; text-decoration: none; font-size: .9rem; transition: color .2s; }
+    .retour:hover { color: var(--fg); }
+    .intro { margin: 0 0 2rem; }
+  </style>
+</Layout>

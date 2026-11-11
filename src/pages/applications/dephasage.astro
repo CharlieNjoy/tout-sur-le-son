@@ -1,0 +1,17 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import CalculDephasage from "../../components/CalculDephasage.astro";
+---
+<Layout title="Déphasage et filtrage en peigne" description="Convertit distance, retard et déphasage, et montre le filtrage en peigne (comb filtering) qui en résulte.">
+  <a href="/applications" class="retour muted">← Applications</a>
+  <h1>Déphasage et filtrage en peigne</h1>
+  <p class="muted intro">Convertit distance, retard et déphasage, et montre le filtrage en peigne (comb filtering) qui en résulte.</p>
+
+  <CalculDephasage />
+
+  <style>
+    .retour { display: inline-block; margin-bottom: 1.5rem; text-decoration: none; font-size: .9rem; transition: color .2s; }
+    .retour:hover { color: var(--fg); }
+    .intro { margin: 0 0 2rem; }
+  </style>
+</Layout>

@@ -1,0 +1,65 @@
+---
+// Figure pour les pages "phénomènes" : une animation réelle (GIF sourcé)
+// et/ou une photo de la vie réelle (sourcée), empilées, avec crédit sous chacune.
+// Utilisable dans une leçon .mdx :
+// <FigurePhenomene slot="figure" legende="..." gif={{ src: "...", credit: "..." }} photo={{ src: "...", credit: "..." }} />
+interface Media {
+  src: string;
+  credit: string;
+}
+interface Props {
+  legende?: string;
+  gif?: Media;
+  photo?: Media;
+}
+const { legende, gif, photo } = Astro.props as Props;
+---
+<figure class="figure-phenomene">
+  {gif && (
+    <div class="bloc">
+      <img src={gif.src} alt={legende ?? ""} loading="lazy" />
+      <p class="credit">{gif.credit}</p>
+    </div>
+  )}
+  {photo && (
+    <div class="bloc">
+      <img src={photo.src} alt={legende ?? ""} loading="lazy" />
+      <p class="credit">{photo.credit}</p>
+    </div>
+  )}
+  {legende && <figcaption>{legende}</figcaption>}
+</figure>
+
+<style>
+  .figure-phenomene {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .bloc {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--bg) 92%, white 8%);
+  }
+  .bloc img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .bloc .credit {
+    margin: 0;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.68rem;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    line-height: 1.3;
+  }
+  .figure-phenomene figcaption {
+    font-size: 0.82rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 0 0.2rem;
+  }
+</style>

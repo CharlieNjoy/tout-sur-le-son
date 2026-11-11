@@ -1,0 +1,94 @@
+---
+// Arbre de classification à bulles, pour ranger des sous-disciplines sous une racine
+// commune. Utilisable dans une leçon .mdx :
+// <Arborescence racine="Acoustique" branches={[
+//   { titre: "...", items: [{ nom, description }] },
+// ]} />
+const { racine, branches = [] } = Astro.props;
+---
+<div class="arbre">
+  <div class="noeud racine">{racine}</div>
+  <div class="tronc"></div>
+  <div class="barre"></div>
+  <div class="niveau-branches">
+    {branches.map((b) => (
+      <div class={`colonne ${b.items.length >= 5 ? "colonne-large" : ""}`}>
+        <div class="tige"></div>
+        <div class="noeud branche">{b.titre}</div>
+        <div class="feuilles">
+          {b.items.map((it) => (
+            <div class="noeud feuille">
+              <p class="nom">{it.nom}</p>
+              <p class="description">{it.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  .arbre { display: flex; flex-direction: column; align-items: center; }
+
+  .noeud {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: .55rem 1.25rem;
+    text-align: center;
+    font-size: .95rem;
+  }
+  .noeud.racine {
+    background: rgba(110, 231, 255, .1);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-size: 1.05rem;
+  }
+  .noeud.branche {
+    background: rgba(110, 231, 255, .05);
+    font-weight: 500;
+  }
+  .noeud.feuille {
+    border-radius: 12px;
+    text-align: left;
+    padding: .75rem 1rem;
+    width: 100%;
+  }
+  .feuille .nom { margin: 0; color: var(--accent); font-size: .88rem; }
+  .feuille .description { margin: .3rem 0 0; color: var(--muted); font-size: .85rem; line-height: 1.5; }
+
+  .tronc { width: 1px; height: 1.5rem; background: var(--line); }
+  .barre { width: 100%; max-width: 760px; height: 1px; background: var(--line); }
+
+  .niveau-branches {
+    display: flex; justify-content: center; flex-wrap: wrap;
+    gap: 1.75rem; width: 100%; max-width: 760px; margin-top: 0;
+  }
+  .colonne {
+    display: flex; flex-direction: column; align-items: center;
+    flex: 1 1 200px; max-width: 280px;
+  }
+  .tige { width: 1px; height: 1.5rem; background: var(--line); }
+  .colonne .feuilles {
+    display: flex; flex-direction: column; gap: .6rem;
+    margin-top: .9rem; width: 100%;
+  }
+
+  /* Colonne avec beaucoup d'items (5+) : prend toute la largeur et
+     range ses bulles en grille plutôt qu'en une longue pile verticale. */
+  .colonne-large {
+    flex-basis: 100%;
+    max-width: 760px;
+  }
+  .colonne-large .feuilles {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: .6rem .9rem;
+  }
+
+  @media (max-width: 640px) {
+    .niveau-branches { gap: 2.25rem; }
+    .colonne { flex-basis: 100%; max-width: 360px; }
+    .colonne-large .feuilles { grid-template-columns: 1fr; }
+  }
+</style>

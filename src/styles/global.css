@@ -48,3 +48,16 @@ h2 { font-weight: 400; }
 .prose ul { margin: 0; padding-left: 1.2rem; display: grid; gap: .5rem; }
 .prose li { line-height: 1.6; }
 .prose strong { color: var(--fg); }
+
+/* ===== Mise en forme mathématique (fiches d'équations, leçons) ===== */
+.fraction {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: middle;
+  text-align: center;
+  line-height: 1.15;
+  margin: 0 .15em;
+  font-size: .92em;
+}
+.fraction .num { padding: 0 .2em .1em; }
+.fraction .den { padding: .1em .2em 0; border-top: 1.5px solid currentColor; }
