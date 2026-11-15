@@ -109,6 +109,19 @@ import { materiel } from "../data/materiel.js";
   .comp-entete h3 { margin: 0; font-weight: 400; }
   :global(.comparateur .table-comp th[scope="row"]) { color: var(--muted); font-weight: 400; }
 
+  /* Comparaison détaillée : largeurs fixes (1 à 4 colonnes selon la sélection) pour que le
+     tableau tienne toujours dans la largeur de la page, texte autorisé à passer à la ligne
+     plutôt que de déborder horizontalement. */
+  .table-comp { table-layout: fixed; width: 100%; }
+  :global(.comparateur .table-comp th),
+  :global(.comparateur .table-comp td) {
+    white-space: normal; overflow-wrap: break-word; vertical-align: top;
+  }
+  :global(.comparateur .table-comp thead th:first-child),
+  :global(.comparateur .table-comp tbody th[scope="row"]) {
+    width: 8.5rem; text-align: left;
+  }
+
   .axes { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: .75rem; }
   .axes label { display: grid; gap: .3rem; }
   .nuage { height: 340px !important; }
@@ -127,6 +140,7 @@ import { materiel } from "../data/materiel.js";
   const PAR_DEFAUT = {                       // axes proposés au départ pour chaque catégorie
     micros: ["prix", "bruit"], casques: ["prix", "sensibilite"],
     enceintes: ["prix", "f3"], preamps: ["prix", "ein"],
+    cartesson: ["prix", "ein"],
   };
 
   document.querySelectorAll(".comparateur").forEach((racine) => {
@@ -162,9 +176,15 @@ import { materiel } from "../data/materiel.js";
       const marques = [...new Set(cat.items.map((r) => r.marque))].sort((a, b) => a.localeCompare(b, "fr"));
       $(".marque").innerHTML = `<option value="">Toutes les marques</option>` + marques.map((m) => `<option>${m}</option>`).join("");
 
-      // Un menu par colonne texte (capteur, directivité, ouverture…)
-      $(".filtres-texte").innerHTML = cat.colonnes.filter((c) => !c.num).map((c) => {
-        const valeurs = [...new Set(cat.items.map((r) => r[c.key]).filter(Boolean))].sort();
+      // Un menu par colonne texte (capteur, directivité, ouverture…), plus les colonnes
+      // numériques explicitement invitées (menu: true — peu de valeurs distinctes, ex.
+      // nombre d'entrées). menu: false → exclu des filtres (texte libre peu adapté à un
+      // menu, ex. gain brut constructeur) ; indépendant de tableau: false, qui ne masque
+      // que la colonne du tableau récapitulatif.
+      $(".filtres-texte").innerHTML = cat.colonnes.filter((c) => c.menu === true || (!c.num && c.menu !== false)).map((c) => {
+        // v != null (pas Boolean) pour ne pas perdre la valeur 0 (ex. 0 entrée instrument).
+        const valeurs = [...new Set(cat.items.map((r) => r[c.key]).filter((v) => v != null))]
+          .sort((a, b) => (c.num ? a - b : String(a).localeCompare(String(b), "fr")));
         return `<select data-filtre="${c.key}"><option value="">${c.label} : tous</option>${valeurs.map((v) => `<option>${v}</option>`).join("")}</select>`;
       }).join("");
       $(".filtres-texte").querySelectorAll("select").forEach((s) =>
@@ -204,7 +224,9 @@ import { materiel } from "../data/materiel.js";
         if (q && !`${r.marque} ${r.modele}`.toLowerCase().includes(q)) return false;
         if (marque && r.marque !== marque) return false;
         if (prixMax < plafond && (r.prix == null || r.prix > prixMax)) return false;
-        for (const [k, v] of Object.entries(etat.filtresTexte)) if (v && r[k] !== v) return false;
+        // String(r[k]) : la valeur d'un <select> est toujours une chaîne, même pour un
+        // filtre sur une colonne numérique (menu: true, ex. nombre d'entrées).
+        for (const [k, v] of Object.entries(etat.filtresTexte)) if (v && String(r[k]) !== v) return false;
         if (complets && nums.filter((c) => r[c.key] == null).length > nums.length / 2) return false;
         return true;
       });

@@ -5,7 +5,129 @@ references:
   - titre: "Support de cours (PDF) — Hauteur et durées"
     url: "/cours-pdf/acoustique/4-4-hauteur-et-durees.pdf"
     description: "Diapositives du cours de Charlie"
+  - titre: "Mel scale"
+    url: "https://en.wikipedia.org/wiki/Mel_scale"
+    description: "Wikipedia — l'échelle des mels (Stevens, Volkman & Newman, 1937)"
+  - titre: "Missing fundamental"
+    url: "https://en.wikipedia.org/wiki/Missing_fundamental"
+    description: "Wikipedia — hauteur virtuelle et fondamentale manquante"
+  - titre: "Shepard tone"
+    url: "https://en.wikipedia.org/wiki/Shepard_tone"
+    description: "Wikipedia — l'illusion sonore de Shepard et son extension par Risset"
 ---
-La hauteur perçue d'un son dépend avant tout de sa fréquence fondamentale, mais pas de façon linéaire : l'oreille distingue plus facilement des écarts de fréquence en grave qu'en aigu pour un même écart en Hz. C'est pourquoi on utilise des échelles adaptées à la perception : le **mel** (hauteur perçue) et le **cent** (1/100 de demi-ton, pour mesurer de petits écarts musicaux).
+import Encadre from "../../../../components/mdx/Encadre.astro";
+import CourbeDiscrimination from "../../../../components/mdx/CourbeDiscrimination.astro";
+import CourbeMel from "../../../../components/mdx/CourbeMel.astro";
+import SchemaHauteurVirtuelle from "../../../../components/mdx/SchemaHauteurVirtuelle.astro";
+import SpiraleChroma from "../../../../components/mdx/SpiraleChroma.astro";
+import LiensApplications from "../../../../components/mdx/LiensApplications.astro";
 
-En tempérament égal, chaque demi-ton multiplie la fréquence par 2^(1/12) ≈ 1,0595 ; l'écart en cents entre deux fréquences f₁ et f₂ vaut 1200·log₂(f₂/f₁).
+La hauteur est l'attribut perceptif qui permet de dire qu'un son est plus grave ou plus aigu qu'un autre. L'ANSI la définit comme *« l'attribut de la sensation auditive selon lequel les sons peuvent être ordonnés sur une échelle allant du grave à l'aigu »*, et l'AFNOR comme le *« caractère de la sensation auditive liée à la fréquence »*. Ces définitions sont volontairement prudentes : la notion de hauteur « unique » n'existe pas vraiment pour les sons réels, et on distingue en pratique deux hauteurs bien différentes.
+
+- **La hauteur tonale** : celle qui permet d'apparier un son à une note de musique, de fredonner ou d'accorder un instrument. Elle n'existe de façon nette que sur une bande limitée, environ **60 Hz à 8 kHz**.
+- **La hauteur spectrale** : une sensation de grave/aigu plus diffuse, présente sur toute la bande audible, y compris pour des sons bruités sans structure harmonique nette (elle est abordée plus bas).
+
+## La résolution fréquentielle de l'oreille
+
+Comme pour l'intensité (loi de Weber-Fechner), notre perception des écarts de fréquence est **relative et non absolue** : l'oreille ne détecte pas un écart donné en Hz, mais un **rapport** entre deux fréquences — d'où l'usage d'échelles logarithmiques (l'octave, par exemple, correspond toujours à un doublement de fréquence, qu'on parte de 100 Hz ou de 5000 Hz).
+
+Le seuil différentiel de fréquence (le plus petit écart perceptible, noté Δf) suit une courbe caractéristique en U :
+
+<CourbeDiscrimination legende="Seuil différentiel relatif Δf/f en fonction de la fréquence du son pur testé : la discrimination est la plus fine entre 500 Hz et 2 kHz." />
+
+Entre 500 Hz et 5 kHz, il faut environ **0,3 % d'écart** pour percevoir une différence (on ne distingue pas 1000 Hz de 1001 Hz, mais on commence à sentir la différence vers 1003 Hz) ; en dessous de 500 Hz, cette valeur dégradée peut monter jusqu'à 1 %. Cette zone de meilleure résolution n'est pas un hasard : elle coïncide avec la bande de fréquences de la voix humaine.
+
+<Encadre>Avec une résolution de 0,3 %, en partant de 20 Hz, il faut environ <strong>2300 incréments successifs</strong> pour atteindre 20 000 Hz (20 × 1,003<sup>N</sup> = 20 000). En tenant compte de la dégradation de la résolution vers les extrêmes, on estime plutôt à <strong>1500-2000</strong> le nombre de hauteurs réellement discernables sur tout le spectre audible — portées par les 15 000 à 30 000 cellules ciliées de la cochlée.</Encadre>
+
+### Bande critique et filtres auditifs
+
+La cochlée se comporte comme un banc de filtres passe-bande disposés le long de sa longueur : chaque fréquence excite une zone précise de la membrane basilaire (les aigus près de la base, les graves près de l'apex — organisation dite *tonotopique*). La largeur de ces filtres définit la **bande critique** : à l'intérieur d'une bande critique, deux sons purs ne sont plus perçus comme deux hauteurs distinctes.
+
+Pour une résolution de n % (n = 0,3 en zone sensible), la bande critique autour d'une fréquence f s'exprime : f<sub>max</sub> = f · (1 + n/100), f<sub>min</sub> = f · (1 − n/100), soit un écart Δf = f<sub>max</sub> − f<sub>min</sub> = f·n / 50.
+
+Une formulation plus utilisée aujourd'hui est celle de l'**ERB** (*Equivalent Rectangular Bandwidth*, Glasberg & Moore), qui modélise chaque filtre auditif réel par un filtre rectangulaire équivalent de même énergie : ERB(f) = 24,7 · (1 + 4,37·f / 1000), avec f en Hz.
+
+## Une hauteur qui n'est pas fixe
+
+La hauteur perçue d'un son pur ne dépend pas seulement de sa fréquence : plusieurs autres paramètres la font légèrement varier.
+
+- **L'intensité** : à fréquence fixe, augmenter le niveau d'un son pur modifie sa hauteur perçue — elle **croît pour les fréquences élevées** et **décroît pour les fréquences graves**, avec des écarts pouvant atteindre 8 %. Le mécanisme proposé : sur la membrane basilaire, le pic d'excitation d'un son pur se déplace légèrement avec le niveau, tandis que la traîne du patron d'excitation (vers les basses fréquences) reste quasiment fixe. Certains musiciens compensent d'ailleurs inconsciemment ce glissement en ajustant leur justesse pendant un crescendo.
+- **La durée** : en dessous d'une seconde, la durée d'un son pur influence sa tonie perçue. Un son très court (moins de 20 ms) est perçu **plus grave** qu'un son de même fréquence mais plus long — l'oreille n'a pas eu le temps d'analyser complètement le cycle.
+- **Les harmoniques et le masquage** : dans un son riche en harmoniques, un fondamental trop faible en niveau peut être « absorbé » par le masquage des harmoniques voisines, ce qui pousse parfois la hauteur perçue vers l'octave supérieure. Cette distorsion reste en général faible et sans conséquence pratique en musique.
+- **Le masquage par le bruit** : un son pur noyé dans du bruit peut voir sa hauteur perçue légèrement décalée, notamment si le bruit est asymétrique autour de sa fréquence.
+
+## Mesurer la hauteur perçue : l'échelle des mels
+
+Puisque la hauteur perçue n'évolue pas linéairement avec la fréquence, Stevens, Volkman et Newman ont proposé en 1937 une échelle psychométrique de la hauteur tonale, construite expérimentalement (des sujets ajustaient un son pur pour qu'il paraisse « deux fois plus aigu » qu'un son de référence) : le **mel**. Par convention, 1000 Hz à 40 phones correspond à 1000 mels.
+
+<CourbeMel legende="Hauteur perçue (mel) en fonction de la fréquence (Hz) : la courbe s'aplatit nettement au-delà de 1000 Hz, signe d'une perception de plus en plus « tassée » vers l'aigu." />
+
+Les formules de passage sont : mel = 2595 · log(1 + f/700), et dans l'autre sens f = 700 · (10<sup>mel/2595</sup> − 1).
+
+Par exemple, l'écart perçu entre deux sons purs de 300 Hz et 600 Hz (soit 402 mels et 698 mels, un rapport de 1,735) ne se retrouve pas entre 1000 Hz et 2000 Hz, mais entre 1000 Hz (1000 mels) et environ **2563 Hz** (1735 mels) : l'octave « perceptive » s'élargit à mesure qu'on monte en fréquence.
+
+L'échelle des mels a toutefois fait l'objet de critiques récurrentes : elle ne correspond **ni à une échelle logarithmique simple, ni à l'échelle musicale** (où l'octave est un rapport constant ×2 à toutes les fréquences). D'autres échelles ont été proposées à partir des mêmes données expérimentales, et certaines études rapportent des résultats différents selon que les sons sont présentés du grave vers l'aigu ou l'inverse. En pratique, cette limite n'a guère changé la théorie de l'accordage musical, qui reste fondée sur l'octave acoustique (×2) plutôt que sur l'octave perceptive.
+
+## Tonie et chroma : une hauteur à deux dimensions
+
+La hauteur des sons purs ne se résume pas à une seule échelle linéaire : elle se décrit mieux selon **deux dimensions**.
+
+- La **tonie** (*tone height*) : la dimension grave/aigu classique, celle que mesure le mel.
+- La **chroma** : une dimension de « similarité », cyclique sur l'octave — deux sons séparés exactement d'une octave (un rapport ×2 de fréquence) sont perçus comme très similaires, presque comme « la même note », bien que de hauteur différente. C'est le même principe que celui qui donne leur nom aux notes de musique (do, ré, mi... se répètent à chaque octave).
+
+Roger Shepard (1964) a proposé de représenter ces deux dimensions par une **hélice** : la tonie correspond à la position verticale (la hauteur qui monte), la chroma à la position angulaire autour de l'hélice, qui se répète identiquement à chaque tour (chaque octave).
+
+<SpiraleChroma legende="Représentation à deux dimensions de la hauteur (Shepard, 1964) : la chroma (angle, cyclique) et la tonie (position verticale, qui augmente en continu)." />
+
+Cette représentation a une conséquence audible spectaculaire : les **sons de Shepard**, construits en superposant plusieurs copies d'un même profil spectral séparées d'octaves exactes (avec une enveloppe qui atténue les extrêmes graves et aigus), donnent l'illusion d'une hauteur qui **monte indéfiniment** sans jamais finir de monter — un équivalent auditif des escaliers impossibles de la lithographie *Montée et descente* d'Escher, ou de l'effet visuel du poteau de barbier (*barber pole*) qui semble tourner indéfiniment dans une seule direction. Jean-Claude Risset a ensuite étendu ce principe à des glissandos continus (le « glissando de Risset »).
+
+## La hauteur des sons complexes : la fondamentale manquante
+
+Un son complexe doit-il nécessairement contenir de l'énergie à sa fréquence fondamentale pour que celle-ci soit perçue ? La réponse, contre-intuitive, est non.
+
+<SchemaHauteurVirtuelle legende="Un spectre ne comportant que les harmoniques 2, 3, 4 et 5 d'un fondamental f0 — totalement absent du signal — donne malgré tout la sensation d'un son de hauteur f0." />
+
+Ce phénomène, appelé **hauteur virtuelle** (ou *residue pitch*, mis en évidence notamment par Schouten), apparaît dès que **deux harmoniques consécutives au moins** sont présentes, typiquement dans la bande **400 Hz à 1800 Hz** : l'oreille reconstruit la hauteur correspondant à l'écart commun entre les harmoniques, même quand ce fondamental n'existe pas physiquement dans le signal. C'est ce principe qui permet par exemple à un petit haut-parleur, incapable de reproduire les graves profonds, de laisser percevoir malgré tout la hauteur d'une basse — à condition que suffisamment d'harmoniques survivent.
+
+Ce résultat met en défaut deux théories plus simples de l'écoute :
+
+- **La théorie tonotopique / du codage de place** (la hauteur = position excitée sur la cochlée) : masquer précisément la zone cochléaire qui correspondrait au fondamental manquant ne supprime pas la hauteur virtuelle perçue, puisque le fondamental n'y était de toute façon pas présent.
+- **La théorie de l'écoute spectrale / du gabarit** (reconnaissance d'un patron de pic spectral appris) : la hauteur virtuelle ne dépend pas du suivi d'une harmonique particulière — elle persiste même quand on fait varier quel sous-ensemble d'harmoniques est présent (par exemple 2 à 6, puis 5 à 9, puis 8 à 12), tant que leur écart commun reste le même.
+
+Le phénomène se généralise même à des sons **inharmoniques** : une cloche, dont les partiels ne sont pas dans un rapport entier exact, fait malgré tout entendre une hauteur reconnaissable, qui correspond généralement au sous-multiple commun le plus proche des partiels dominants (souvent à l'octave du quatrième partiel). Cela met également en défaut un modèle d'écoute purement spectrale.
+
+## La hauteur spectrale
+
+Certains sons ne possèdent pas de structure harmonique nette (ou leur fondamental est hors de la bande 60 Hz - 8 kHz), mais donnent tout de même une impression de hauteur diffuse sur l'ensemble du spectre audible : c'est la **hauteur spectrale**. On la rencontre par exemple dans le son d'harmoniques jouées à l'archet sur une contrebasse, le bourdonnement d'un arc musical, ou le chant diphonique (chant harmonique/overtone singing), où un chanteur renforce sélectivement une harmonique de sa voix au point de la faire entendre comme une mélodie à part entière, superposée au bourdon grave.
+
+## Suivre une mélodie : les flux auditifs
+
+Face à une suite de notes qui alternent rapidement entre deux zones de fréquence, l'oreille ne suit pas forcément l'ordre chronologique : elle tend à regrouper les sons **les plus proches en fréquence** en un même flux mélodique (c'est le principe du streaming auditif). Selon la vitesse et l'écart de fréquence, on perçoit soit une seule ligne mélodique continue (écoute dite « synthétique »), soit **deux flux parallèles** entrelacés, chacun suivant sa propre trajectoire (écoute dite « analytique ») — c'est ce procédé, par exemple, qu'exploitent certaines lignes de basse ou d'arpèges rapides pour faire entendre deux voix à partir d'un seul instrument monophonique.
+
+## De la hauteur à la musique : tempérament égal et cents
+
+La théorie de l'accordage s'appuie sur l'octave acoustique (rapport ×2) plutôt que sur l'octave perceptive du mel. En tempérament égal, l'octave est divisée en 12 demi-tons de rapport identique *r*, tel que douze demi-tons successifs reconstituent bien l'octave :
+
+f · r<sup>12</sup> = 2f, d'où r = 2<sup>1/12</sup> = <sup>12</sup>√2 ≈ 1,05946.
+
+Chaque demi-ton correspond donc à une augmentation d'environ 5,946 % de la fréquence. Pour mesurer des écarts plus fins qu'un demi-ton, on utilise le **cent** (1/100 de demi-ton, soit 1/1200 d'octave) : cents = 1200 · log<sub>2</sub>(f<sub>2</sub>/f<sub>1</sub>) = 1200 · log(f<sub>2</sub>/f<sub>1</sub>) / log(2).
+
+Il existe par ailleurs d'autres systèmes d'accordage historiques ou alternatifs (pythagoricien, tempéraments mésotoniques, Werckmeister, Kirnberger...), qui répartissent différemment les petites imperfections mathématiques inévitables dès qu'on veut faire coïncider exactement quintes et octaves.
+
+## À retenir
+
+- On distingue la **hauteur tonale** (60 Hz - 8 kHz, celle des notes de musique) de la **hauteur spectrale** (diffuse, sur toute la bande audible).
+- La résolution fréquentielle de l'oreille est **relative** (en %, pas en Hz absolus), meilleure entre 500 Hz et 2 kHz ; elle définit la **bande critique** et l'**ERB** des filtres auditifs.
+- La hauteur perçue varie aussi avec l'**intensité**, la **durée** et le contenu en **harmoniques** du son.
+- L'échelle des **mels** mesure la hauteur perçue (non linéaire avec la fréquence), mais reste critiquée et ne remplace pas l'échelle musicale.
+- La hauteur a deux dimensions : la **tonie** (continue) et la **chroma** (cyclique par octave) — d'où l'hélice de Shepard et l'illusion de hauteur sans fin.
+- Un son complexe peut faire entendre une **hauteur virtuelle** correspondant à un fondamental physiquement absent, dès que deux harmoniques consécutives suffisent — un résultat qui met en défaut les théories simples de codage de place ou d'écoute spectrale.
+- L'accordage musical standard (tempérament égal) repose sur l'octave acoustique ×2, divisée en demi-tons de rapport 2^(1/12) ≈ 1,05946, mesurés plus finement en **cents**.
+
+<LiensApplications items={[
+  {
+    titre: "Générateur",
+    href: "/applications/generateur",
+    texte: "écoute un son pur et fais varier sa fréquence pour sentir la compression de la résolution de l'oreille vers les graves.",
+  },
+]} />

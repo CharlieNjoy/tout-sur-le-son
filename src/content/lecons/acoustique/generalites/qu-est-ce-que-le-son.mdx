@@ -5,9 +5,15 @@ references:
   - titre: "Onde sonore : qu'est-ce que c'est ?"
     url: "https://www.futura-sciences.com/sciences/definitions/physique-onde-sonore-15526/"
     description: "Futura-Sciences — définition de l'onde sonore et de sa propagation"
-  - titre: "Acoustique"
-    url: "https://www.universalis.fr/dictionnaire/acoustique/"
-    description: "Encyclopædia Universalis — entrée du dictionnaire"
+  - titre: "Son"
+    url: "https://www.larousse.fr/encyclopedie/divers/son/92612"
+    description: "Larousse — définition citée dans le cours (« sensation auditive provoquée par une onde acoustique »)"
+  - titre: "Limites d'exposition aux infrasons et aux ultrasons"
+    url: "https://inrs.fr/dam/inrs/CataloguePapier/HST/TI-ND-2250.pdf"
+    description: "INRS — étude bibliographique sur la perception et les effets des infrasons/ultrasons"
+  - titre: "La pression atmosphérique"
+    url: "https://www.techniques-ingenieur.fr/base-documentaire/mesures-analyses-th1/caracterisation-des-fluides-42540210/mesures-en-meteorologie-r3050/pression-atmospherique-r3050v4niv10003.html"
+    description: "Techniques de l'Ingénieur — définition et mesure de la pression atmosphérique"
   - titre: "Support de cours (PDF) — Généralités sur le son"
     url: "/cours-pdf/acoustique/1-generalites-sur-le-son.pdf"
     description: "Diapositives du cours de Charlie"
@@ -18,6 +24,7 @@ import Echelle from "../../../../components/mdx/Echelle.astro";
 import MoleculesAgitation from "../../../../components/animations/MoleculesAgitation.astro";
 import OndeCompression from "../../../../components/animations/OndeCompression.astro";
 import LiensApplications from "../../../../components/mdx/LiensApplications.astro";
+import EntrainementLecon from "../../../../components/mdx/EntrainementLecon.astro";
 import TexteAvecFigure from "../../../../components/mdx/TexteAvecFigure.astro";
 import EchelleDecibels from "../../../../components/mdx/EchelleDecibels.astro";
 
@@ -77,6 +84,8 @@ Au-delà d'une certaine intensité, une perturbation très brève et très forte
 - Une onde acoustique est une variation de **pression** qui se propage dans un milieu.
 - Elle avance de proche en proche, **sans déplacer la matière**.
 - Seules les ondes entre environ 20 Hz et 20 kHz sont perçues comme des sons par l'oreille humaine.
+
+<EntrainementLecon matiere="acoustique" chapitre="Généralités" sousChapitre="Qu'est-ce que le son ?" n={10} />
 
 <LiensApplications items={[
   {

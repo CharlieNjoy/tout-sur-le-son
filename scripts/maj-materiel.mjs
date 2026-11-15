@@ -6,7 +6,7 @@
 import { writeFile } from "node:fs/promises";
 
 const ID = "1fhejyvh-JqYGXqi4wMpsgv0LvVu4C-mI2I62RD3OjX0";
-const ONGLETS = ["CASQUES", "HP actif", "MICRO", "Préamp"];
+const ONGLETS = ["CASQUES", "HP actif", "MICRO", "Préamp", "CARTES SON"];
 const SORTIE = new URL("../src/data/materiel-brut.json", import.meta.url);
 
 // Lecture d'un CSV (gère les guillemets et les virgules dans les cellules)

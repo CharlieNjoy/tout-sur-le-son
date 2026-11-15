@@ -5,13 +5,24 @@ import { questions, NIVEAUX } from "../data/entrainement-classes.js";
 
 // Plan matière → chapitre → sous-chapitres, calqué EXACTEMENT sur /cours
 // (src/data/cours.js), sous-chapitres dédoublonnés tous niveaux confondus.
+// niveauParSousChapitre retrouve le niveau (débutant/intermédiaire/confirmé)
+// auquel appartient chaque sous-chapitre précis dans le plan de cours, pour
+// fixer automatiquement le niveau du quiz quand on choisit un cours précis
+// (le choix du niveau ne reste utile que pour « Chapitre entier »).
 const plan = matieres.map((m) => ({
   id: m.id,
   nom: m.nom,
-  chapitres: m.chapitres.map((ch) => ({
-    titre: ch.titre,
-    sousChapitres: [...new Set(Object.values(ch.niveaux).flat())],
-  })),
+  chapitres: m.chapitres.map((ch) => {
+    const niveauParSousChapitre = {};
+    Object.entries(ch.niveaux).forEach(([niveauId, titres]) => {
+      titres.forEach((t) => { niveauParSousChapitre[t] = niveauId; });
+    });
+    return {
+      titre: ch.titre,
+      sousChapitres: [...new Set(Object.values(ch.niveaux).flat())],
+      niveauParSousChapitre,
+    };
+  }),
 }));
 ---
 <div class="appli entrainement-classes">
@@ -248,6 +259,23 @@ const plan = matieres.map((m) => ({
       afficherSousChapitres();
     } else if (groupe === "sous-chapitre") {
       sousChapitreChoisi = bouton.dataset.valeur;
+      if (sousChapitreChoisi === "toutes") {
+        // Chapitre entier : plusieurs niveaux possibles, on laisse le choix.
+        blocNiveau.hidden = false;
+      } else {
+        // Cours précis : le niveau est déjà fixé par le plan de cours (cours.js),
+        // on le choisit automatiquement et on cache le sélecteur, redondant ici.
+        const m = plan.find((x) => x.id === matiereChoisie);
+        const ch = m?.chapitres.find((c) => c.titre === chapitreChoisi);
+        const niveauCours = ch?.niveauParSousChapitre[sousChapitreChoisi];
+        if (niveauCours) {
+          niveauChoisi = niveauCours;
+          pucesNiveau.querySelectorAll(".puce").forEach((b) => {
+            b.classList.toggle("actif", b.dataset.valeur === niveauCours);
+          });
+        }
+        blocNiveau.hidden = true;
+      }
       majCompte();
     } else if (groupe === "niveau") {
       niveauChoisi = bouton.dataset.valeur;
@@ -465,6 +493,41 @@ const plan = matieres.map((m) => ({
     gsap.fromTo(ecranReglages, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .4 });
   });
 
+  // ----- Présélection via l'URL (lien direct depuis une leçon de /cours) -----
+  // Paramètres : matiere, chapitre, sousChapitre, niveau, n (nb questions),
+  // demarrer=1 pour lancer directement le quiz sans repasser par les réglages.
+  function trouverPuce(conteneur, valeur) {
+    return conteneur ? [...conteneur.querySelectorAll(".puce")].find((b) => b.dataset.valeur === valeur) : null;
+  }
+
+  function appliquerParametresURL() {
+    const params = new URLSearchParams(window.location.search);
+    const matiereURL = params.get("matiere");
+    const chapitreURL = params.get("chapitre");
+    const sousChapitreURL = params.get("sousChapitre");
+    const niveauURL = params.get("niveau");
+    const nURL = params.get("n");
+    const demarrerURL = params.get("demarrer") === "1";
+
+    if (matiereURL && matiereURL !== matiereChoisie) {
+      trouverPuce(pucesMatiere, matiereURL)?.click();
+    }
+    if (chapitreURL) {
+      trouverPuce(racine.querySelector("#puces-chapitre"), chapitreURL)?.click();
+    }
+    if (sousChapitreURL) {
+      trouverPuce(racine.querySelector("#puces-sous-chapitre"), sousChapitreURL)?.click();
+    }
+    // Pour un cours précis, le clic ci-dessus a déjà fixé le niveau automatiquement
+    // (voir selectionner()) : on n'applique le paramètre niveau que pour « toutes ».
+    if (niveauURL && (!sousChapitreURL || sousChapitreURL === "toutes")) {
+      trouverPuce(pucesNiveau, niveauURL)?.click();
+    }
+    if (nURL) nbInput.value = nURL;
+    if (demarrerURL) demarrer();
+  }
+
   // Initialisation : affiche les chapitres de la première matière
   afficherChapitres();
+  appliquerParametresURL();
 </script>

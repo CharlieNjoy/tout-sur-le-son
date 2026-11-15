@@ -1,0 +1,63 @@
+---
+titre: "Le signal sonore"
+ordre: 1
+references:
+  - titre: "Support de cours (PDF) — Généralités des signaux"
+    url: "/cours-pdf/acoustique/2-1-generalites-des-signaux.pdf"
+    description: "Diapositives du cours de Charlie"
+  - titre: "Rapport signal sur bruit"
+    url: "https://fr.wikipedia.org/wiki/Rapport_signal_sur_bruit"
+    description: "Wikipedia — définition et calcul du rapport signal/bruit (S/B, SNR)"
+---
+import Definitions from "../../../../components/mdx/Definitions.astro";
+import Encadre from "../../../../components/mdx/Encadre.astro";
+import SignalBruit from "../../../../components/animations/SignalBruit.astro";
+import EntrainementLecon from "../../../../components/mdx/EntrainementLecon.astro";
+import LiensApplications from "../../../../components/mdx/LiensApplications.astro";
+
+Avant de représenter un son (temps, spectre) ou de le classer (périodique, aléatoire…), il faut distinguer deux choses qui se mélangent toujours dans ce qu'on capte : ce qu'on cherche à entendre, et ce qui s'y ajoute sans qu'on le veuille.
+
+<Definitions items={[
+  { mot: "Signal", description: "Grandeur physique (pression, tension électrique…) qui varie dans le temps et qui porte l'information utile qu'on veut capter, transmettre ou analyser." },
+  { mot: "Bruit", description: "Toute perturbation indésirable qui s'ajoute au signal utile, sans porter d'information utile : souffle électronique, bruit de fond ambiant, parasites…" },
+  { mot: "Rapport signal/bruit (S/B)", description: "Grandeur qui compare le niveau du signal utile à celui du bruit — plus il est élevé, plus le signal est net par rapport au bruit qui l'accompagne." },
+]} />
+
+## Deux signaux superposés, jamais un seul
+
+En pratique, ce qu'un micro capte ou qu'un appareil mesure n'est jamais un signal parfaitement pur : c'est toujours la **somme** du signal utile et d'un bruit qui s'y ajoute. Le rapport signal/bruit décrit à quel point le premier domine le second.
+
+<SignalBruit />
+
+Quand le bruit est faible devant le signal, celui-ci reste clairement identifiable. Quand le bruit devient comparable au signal, il devient difficile — voire impossible — de distinguer l'information utile du reste.
+
+## Le calculer en décibels
+
+Comme beaucoup de comparaisons de niveaux en acoustique et en électronique, le rapport signal/bruit s'exprime généralement en décibels :
+
+<Encadre>S/B (dB) = 20 · log₁₀ (A<sub>signal</sub> / A<sub>bruit</sub>)<br />ou, en puissance : S/B (dB) = 10 · log₁₀ (P<sub>signal</sub> / P<sub>bruit</sub>)</Encadre>
+
+Quelques repères utiles :
+
+- **S/B = 0 dB** : le signal et le bruit ont la même amplitude — le signal est noyé dans le bruit.
+- **S/B ≈ 20 à 40 dB** : un son de mauvaise à moyenne qualité, où le bruit de fond reste audible.
+- **S/B ≈ 60 dB et plus** : un signal propre, typique d'un bon enregistrement ou d'une chaîne de mesure de qualité.
+
+<Encadre>Plus le rapport S/B est élevé, plus le signal utile est net. C'est un critère central pour choisir un micro, une carte son, ou un capteur de mesure en EINS : au-delà d'un certain niveau, c'est le bruit propre de l'appareil qui limite la précision, pas le phénomène qu'on cherche à mesurer.</Encadre>
+
+## À retenir
+
+- Le **signal** porte l'information utile ; le **bruit** est ce qui s'y ajoute sans en porter.
+- Ce qu'on capte ou mesure est toujours la **somme** des deux, jamais le signal pur seul.
+- Le **rapport signal/bruit (S/B)** compare leurs niveaux, le plus souvent en **décibels**.
+- Un S/B élevé signifie un signal net ; un S/B proche de 0 dB signifie un signal noyé dans le bruit.
+
+<EntrainementLecon matiere="acoustique" chapitre="Signaux" sousChapitre="Le signal sonore" n={10} />
+
+<LiensApplications items={[
+  {
+    titre: "Oscilloscope",
+    href: "/applications/oscilloscope",
+    texte: "observe en direct un signal réel capté par ton micro, bruit de fond compris.",
+  },
+]} />

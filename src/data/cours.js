@@ -30,7 +30,7 @@ export const matieres = [
       {
         titre: "Signaux",
         niveaux: {
-          debutant: ["La représentation du son", "Le spectre"],
+          debutant: ["Le signal sonore", "La représentation du son", "Le spectre"],
           intermediaire: ["Classement et propriétés", "Signaux périodiques", "Signaux non périodiques", "Dynamique et décibel", "Phase et déphasage"],
           confirme: ["Signal sinusoïdal", "Transformée de Fourier", "Distorsion", "Modulation"],
         },

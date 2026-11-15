@@ -1,0 +1,17 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import EchelleMel from "../../components/EchelleMel.astro";
+---
+<Layout title="Échelle Mel" description="Doublez à l'oreille la hauteur perçue d'un son, puis découvrez si vous avez plutôt doublé les Hz ou les Mel.">
+  <a href="/applications" class="retour muted">← Applications</a>
+  <h1>Échelle Mel</h1>
+  <p class="muted intro">Doublez à l'oreille la hauteur perçue d'un son, puis découvrez si vous avez plutôt doublé les Hz ou les Mel.</p>
+
+  <EchelleMel />
+
+  <style>
+    .retour { display: inline-block; margin-bottom: 1.5rem; text-decoration: none; font-size: .9rem; transition: color .2s; }
+    .retour:hover { color: var(--fg); }
+    .intro { margin: 0 0 2rem; }
+  </style>
+</Layout>

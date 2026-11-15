@@ -1,0 +1,258 @@
+---
+// =====================================================================
+//  ÉCHELLE MEL : jeu de doublement de hauteur perçue
+//  mel = 2595 · log10(1 + f/700)   (Stevens, Volkmann & Newman, 1937)
+//
+//  Une référence (f1, tirée au hasard) et un second son (f2, réglé par
+//  l'auditeur) se jouent en boucle, l'un après l'autre. L'auditeur ajuste
+//  f2 jusqu'à percevoir une hauteur deux fois plus aiguë que f1, sans
+//  jamais voir les fréquences. À la validation, on révèle f1, f2, leurs
+//  valeurs en Mel, et les deux rapports f2/f1 et m2/m1 pour comparer ce
+//  qui a réellement été doublé.
+// =====================================================================
+import "../styles/applis.css";
+---
+<div class="appli echelle-mel">
+
+  <p class="consigne">
+    Deux sons se jouent en boucle, l'un après l'autre&nbsp;: une <strong>référence</strong> fixe (tirée au
+    hasard), puis un <strong>second son</strong> que vous réglez avec le curseur. Ajustez-le jusqu'à ce
+    qu'il vous semble <strong>deux fois plus aigu</strong> que la référence — oubliez les Hz, fiez-vous
+    uniquement à l'oreille. Aucune fréquence n'est affichée avant de valider.
+  </p>
+
+  <div class="reglages">
+    <button class="bouton-son debut">▶ Écouter les deux sons</button>
+    <label>
+      <span class="nom">Hauteur du second son</span>
+      <input type="range" class="curseur-f2" min="0" max="1000" value="500" />
+    </label>
+    <label>
+      <span class="nom">Volume <strong class="val-vol">70 %</strong></span>
+      <input type="range" class="curseur-vol" min="0" max="100" value="70" />
+    </label>
+  </div>
+
+  <div class="actions-validation">
+    <button class="bouton-son bouton-valider">Valider</button>
+    <button class="bouton-son bouton-nouveau">Nouvel essai (nouvelle référence)</button>
+  </div>
+
+  <dl class="mesures" hidden></dl>
+
+  <div class="jauge" hidden>
+    <p class="jauge-titre">Rapport obtenu, comparé à un doublement exact (× 2)</p>
+    <div class="ligne">
+      <span class="nom-ligne">Hz</span>
+      <div class="piste">
+        <span class="cible"><span class="etiquette-cible">× 2</span></span>
+        <span class="marqueur marqueur-hz"></span>
+      </div>
+      <span class="val-ratio val-ratio-hz"></span>
+    </div>
+    <div class="ligne">
+      <span class="nom-ligne">Mel</span>
+      <div class="piste">
+        <span class="cible"></span>
+        <span class="marqueur marqueur-mel"></span>
+      </div>
+      <span class="val-ratio val-ratio-mel"></span>
+    </div>
+    <div class="echelle-reperes"><span>× 1</span><span>× 4</span></div>
+  </div>
+
+  <p class="verdict" hidden></p>
+
+  <div class="historique" hidden>
+    <p class="historique-titre">Historique des essais</p>
+    <table class="tableau-historique">
+      <thead><tr><th>#</th><th>Référence</th><th>Second son</th><th>Rapport Hz</th><th>Rapport Mel</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <p class="note">
+    L'échelle Mel (Stevens, Volkmann et Newman, 1937) tente de représenter la hauteur perçue en fonction
+    de la fréquence physique&nbsp;: mel = 2595·log₁₀(1 + f⁄700), calée sur 1000 Hz = 1000 mel. Elle a
+    justement été construite à partir d'expériences de ce type, où des auditeurs devaient diviser ou
+    multiplier une hauteur perçue. Si l'échelle représentait fidèlement votre perception, le rapport en
+    Mel entre vos deux sons devrait valoir exactement 2. En pratique, l'échelle Mel d'origine est
+    régulièrement critiquée pour sa construction (peu de sujets, jugements très dispersés) et des
+    répliques plus récentes trouvent souvent une compression moins marquée aux fréquences aiguës.
+    Recommencez l'essai plusieurs fois, avec des références différentes, pour voir si votre propre
+    rapport reste stable.
+  </p>
+</div>
+
+<style>
+  .echelle-mel .consigne { margin: 0; line-height: 1.6; }
+  .echelle-mel .actions-validation { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+  .echelle-mel .jauge {
+    display: grid; gap: .75rem; padding: 1.25rem;
+    border: 1px solid var(--line); border-radius: 12px;
+  }
+  .echelle-mel .jauge-titre { margin: 0; font-size: .85rem; color: var(--muted); }
+  .echelle-mel .ligne {
+    display: grid; grid-template-columns: 2.5rem 1fr 5rem;
+    align-items: center; gap: .75rem;
+  }
+  .echelle-mel .nom-ligne { font-size: .85rem; color: var(--muted); }
+  .echelle-mel .piste { position: relative; height: 10px; border-radius: 6px; background: var(--line); }
+  .echelle-mel .cible {
+    position: absolute; left: 33.333%; top: -5px; bottom: -5px;
+    width: 2px; background: var(--muted);
+  }
+  .echelle-mel .etiquette-cible {
+    position: absolute; top: -1.4rem; left: 50%; transform: translateX(-50%);
+    font-size: .7rem; color: var(--muted); white-space: nowrap;
+  }
+  .echelle-mel .marqueur {
+    position: absolute; top: 50%; left: 0; width: 12px; height: 12px; margin-left: -6px;
+    border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--bg);
+    transform: translateY(-50%); transition: left .3s;
+  }
+  .echelle-mel .val-ratio { font-size: .9rem; text-align: right; }
+  .echelle-mel .echelle-reperes {
+    display: flex; justify-content: space-between; font-size: .7rem; color: var(--muted); padding: 0 1px;
+  }
+
+  .echelle-mel .verdict { margin: 0; font-size: 1rem; line-height: 1.6; color: var(--fg); }
+
+  .echelle-mel .historique { display: grid; gap: .6rem; }
+  .echelle-mel .historique-titre { margin: 0; font-size: .85rem; color: var(--muted); }
+  .echelle-mel .tableau-historique { width: 100%; border-collapse: collapse; font-size: .88rem; text-align: left; }
+  .echelle-mel .tableau-historique th, .echelle-mel .tableau-historique td { padding: .45rem .5rem; border-bottom: 1px solid var(--line); }
+  .echelle-mel .tableau-historique th { color: var(--muted); font-weight: 400; }
+</style>
+
+<script>
+  import { fmt, boutonSon, logVers } from "../scripts/outils.js";
+
+  const F1_MIN = 250, F1_MAX = 2000;     // plage de tirage de la référence (cachée)
+  const F2_MIN = 60, F2_MAX = 12000;     // plage du curseur réglable
+  const DUR = 0.7, PAUSE = 0.18;         // rythme de l'alternance (s)
+  const JAUGE_MAX = 4;                   // échelle d'affichage de la jauge : × 1 à × 4
+
+  const mel = (f) => 2595 * Math.log10(1 + f / 700);
+
+  document.querySelectorAll(".echelle-mel").forEach((racine) => {
+    const $ = (s) => racine.querySelector(s);
+
+    const etat = { f1: 0, f2: 0, a: 0.7 };
+    const essais = [];
+    let minuteur = null;
+
+    function tirerReference() {
+      etat.f1 = F1_MIN * Math.pow(F1_MAX / F1_MIN, Math.random());
+      $(".curseur-f2").value = 500;
+      $(".mesures").hidden = true;
+      $(".jauge").hidden = true;
+      $(".verdict").hidden = true;
+    }
+
+    const son = boutonSon($(".debut"), {
+      volume: () => etat.a,
+      demarrer: (ac, sortie) => {
+        const o1 = ac.createOscillator(), o2 = ac.createOscillator();
+        const g1 = ac.createGain(), g2 = ac.createGain();
+        g1.gain.value = 0; g2.gain.value = 0;
+        o1.frequency.value = etat.f1;
+        o2.frequency.value = etat.f2;
+        o1.connect(g1).connect(sortie);
+        o2.connect(g2).connect(sortie);
+        o1.start(); o2.start();
+
+        let tour = 0;
+        function cycle() {
+          const [actif, autre] = tour % 2 === 0 ? [g1, g2] : [g2, g1];
+          const t = ac.currentTime;
+          autre.gain.setTargetAtTime(0, t, 0.01);
+          actif.gain.setTargetAtTime(1, t + PAUSE, 0.01);
+          tour++;
+        }
+        cycle();
+        minuteur = setInterval(cycle, (DUR + PAUSE) * 1000);
+        return { o1, o2, g1, g2 };
+      },
+      arreter: () => { clearInterval(minuteur); minuteur = null; },
+    });
+
+    function majF2() {
+      etat.f2 = logVers($(".curseur-f2").value, F2_MIN, F2_MAX);
+      const s = son.actif();
+      if (s) s.o2.frequency.setTargetAtTime(etat.f2, s.ac.currentTime, 0.02);
+    }
+
+    function majVolume() {
+      etat.a = $(".curseur-vol").value / 100;
+      $(".val-vol").textContent = `${$(".curseur-vol").value} %`;
+      son.volume(etat.a);
+    }
+
+    function pctJauge(v) {
+      return Math.max(0, Math.min(100, ((v - 1) / (JAUGE_MAX - 1)) * 100));
+    }
+
+    function valider() {
+      const f1 = etat.f1, f2 = etat.f2;
+      const m1 = mel(f1), m2 = mel(f2);
+      const rHz = f2 / f1, rMel = m2 / m1;
+
+      $(".mesures").innerHTML = [
+        ["Référence (révélée)", `${fmt(f1)} Hz`],
+        ["Votre second son", `${fmt(f2)} Hz`],
+        ["Rapport en Hz (f₂ ⁄ f₁)", `× ${fmt(rHz, 2)}`],
+        ["Référence en Mel", `${fmt(m1)} mel`],
+        ["Votre second son en Mel", `${fmt(m2)} mel`],
+        ["Rapport en Mel (m₂ ⁄ m₁)", `× ${fmt(rMel, 2)}`],
+      ].map(([dt, dd]) => `<div><dt>${dt}</dt><dd>${dd}</dd></div>`).join("");
+      $(".mesures").hidden = false;
+
+      $(".marqueur-hz").style.left = `${pctJauge(rHz)}%`;
+      $(".marqueur-mel").style.left = `${pctJauge(rMel)}%`;
+      $(".val-ratio-hz").textContent = `× ${fmt(rHz, 2)}`;
+      $(".val-ratio-mel").textContent = `× ${fmt(rMel, 2)}`;
+      $(".jauge").hidden = false;
+
+      const ecartHz = Math.abs(rHz - 2), ecartMel = Math.abs(rMel - 2);
+      let verdict;
+      if (Math.abs(ecartHz - ecartMel) < 0.05) {
+        verdict = "Les deux rapports sont proches de 2 : ici, doubler la hauteur perçue revient presque à doubler les Hz et à doubler les Mel.";
+      } else if (ecartMel < ecartHz) {
+        verdict = "Votre jugement colle davantage à l'échelle Mel (rapport Mel plus proche de 2) qu'à un simple doublement de la fréquence en Hz.";
+      } else {
+        verdict = "Votre jugement colle davantage à un doublement de la fréquence en Hz qu'à l'échelle Mel.";
+      }
+      $(".verdict").textContent = verdict;
+      $(".verdict").hidden = false;
+
+      essais.push({ f1, f2, rHz, rMel });
+      majHistorique();
+    }
+
+    function majHistorique() {
+      $(".tableau-historique tbody").innerHTML = essais.map((e, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${fmt(e.f1)} Hz</td>
+          <td>${fmt(e.f2)} Hz</td>
+          <td>× ${fmt(e.rHz, 2)}</td>
+          <td>× ${fmt(e.rMel, 2)}</td>
+        </tr>`).join("");
+      $(".historique").hidden = essais.length === 0;
+    }
+
+    $(".curseur-f2").addEventListener("input", majF2);
+    $(".curseur-vol").addEventListener("input", majVolume);
+    $(".bouton-valider").addEventListener("click", valider);
+    $(".bouton-nouveau").addEventListener("click", () => {
+      tirerReference();
+      majF2();
+    });
+
+    tirerReference();
+    majF2();
+    majVolume();
+  });
+</script>

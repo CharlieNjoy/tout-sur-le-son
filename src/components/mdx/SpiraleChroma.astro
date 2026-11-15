@@ -1,0 +1,91 @@
+---
+// Représentation à deux dimensions de la hauteur des sons purs (Shepard, 1964) :
+// la "tonie" (hauteur absolue, axe vertical) et la "chroma" (position angulaire,
+// qui se répète à chaque octave) forment une hélice. Deux notes de même nom
+// (Do3, Do4...) tombent sur la même génératrice verticale, à des hauteurs
+// différentes. Utilisable dans une leçon .mdx :
+// <SpiraleChroma legende="..." />
+interface Props {
+  legende?: string;
+}
+const { legende } = Astro.props as Props;
+
+const CX = 150, RX = 78, RY = 24;
+const BASE_Y = 178, PAS_TOUR = 46; // descente verticale par tour (octave)
+const TOURS = 3;
+
+function point(theta: number) {
+  const tourY = BASE_Y - (theta / (2 * Math.PI)) * PAS_TOUR;
+  const x = CX + RX * Math.cos(theta);
+  const y = tourY - RY * Math.sin(theta);
+  return { x, y };
+}
+
+const pas = Math.PI / 24;
+const pts = [];
+for (let t = 0; t <= TOURS * 2 * Math.PI + 0.001; t += pas) pts.push(point(t));
+const d = `M ${pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" L ")}`;
+
+// marqueurs de quelques notes sur le dernier tour (chroma), espacées de 30°
+const notes = ["Do", "Ré", "Mi", "Fa", "Sol", "La", "Si"];
+const anglesNotes = [0, Math.PI / 6 * 1.7, Math.PI / 6 * 3.4, Math.PI / 6 * 4, Math.PI / 6 * 5.4, Math.PI / 6 * 7, Math.PI / 6 * 8.6]
+  .map((a) => a % (2 * Math.PI));
+---
+<figure class="spirale-chroma">
+  <svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={legende ?? "Hélice de la hauteur : chroma (angle) et tonie (hauteur verticale)"}>
+    <path d={d} class="helice" fill="none" />
+
+    {anglesNotes.map((a, i) => {
+      const p = point(a); // sur le premier tour (en bas), une génératrice par note
+      // étiquette décalée radialement vers l'extérieur pour rester lisible
+      const lx = CX + (RX + 14) * Math.cos(a);
+      const ly = (BASE_Y - RY * Math.sin(a)) - 2;
+      return (
+        <>
+          <circle cx={p.x} cy={p.y} r="2.6" class="note" />
+          <text x={lx} y={ly} class="etiquette-note" text-anchor={Math.cos(a) > 0.2 ? "start" : Math.cos(a) < -0.2 ? "end" : "middle"}>{notes[i]}</text>
+        </>
+      );
+    })}
+
+    <!-- axe vertical : tonie -->
+    <line x1="24" y1={BASE_Y} x2="24" y2={BASE_Y - TOURS * PAS_TOUR} class="axe" marker-end="url(#pointe-haut)" />
+    <text x="8" y={BASE_Y - TOURS * PAS_TOUR + 4} class="etiquette-axe">tonie</text>
+    <text x="8" y={BASE_Y - 4} class="etiquette-axe">(hauteur absolue)</text>
+
+    <!-- repère chroma : flèche circulaire en bas -->
+    <text x={CX} y="196" class="etiquette-axe etiquette-centre">chroma (position dans l'octave, cyclique)</text>
+
+    <defs>
+      <marker id="pointe-haut" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+        <path d="M0,0 L7,3.5 L0,7 Z" class="pointe" />
+      </marker>
+    </defs>
+  </svg>
+  {legende && <figcaption>{legende}</figcaption>}
+</figure>
+
+<style>
+  .spirale-chroma {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--bg) 92%, white 8%);
+  }
+  .spirale-chroma svg { display: block; width: 100%; height: auto; }
+  .spirale-chroma figcaption {
+    padding: .6rem .9rem;
+    border-top: 1px solid var(--line);
+    font-size: .82rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  .helice { stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+  .note { fill: var(--fg); }
+  .axe { stroke: var(--muted); stroke-width: 1; }
+  .pointe { fill: var(--muted); }
+  .etiquette-axe { fill: var(--muted); font-size: 9px; }
+  .etiquette-centre { text-anchor: middle; }
+  .etiquette-note { fill: var(--fg); font-size: 9px; }
+</style>

@@ -1,21 +1,12 @@
 ---
-import { getCollection } from "astro:content";
 import Layout from "../layouts/Layout.astro";
+import { getCollection } from "astro:content";
 import { matieres } from "../data/cours.js";
 import { infosLecon } from "../data/lecons.js";
 
-const entreesLecons = await getCollection("lecons");
-
-// Numérote en continu les sous-chapitres d'un chapitre, colonne de niveau après colonne
-// de niveau (ex. 2.1, 2.2 en débutant, puis 2.3, 2.4… en intermédiaire).
-function numeroterChapitre(ch) {
-  const numeros = new Map();
-  let n = 0;
-  for (const sousChapitres of Object.values(ch.niveaux)) {
-    for (const titre of sousChapitres) numeros.set(titre, ++n);
-  }
-  return numeros;
-}
+// Permet au sommaire de créer automatiquement un lien vers la page de leçon
+// (src/content/lecons/<matiere>/<chapitreSlug>/<slug>.mdx) quand elle existe.
+const entrees = await getCollection("lecons");
 ---
 <Layout title="Cours">
 
@@ -48,16 +39,10 @@ function numeroterChapitre(ch) {
           m.chapitres.map((ch, i) => {
             // Uniquement les niveaux qui ont du contenu dans ce chapitre
             const colonnes = m.niveaux.filter((nv) => ch.niveaux[nv.id]?.length);
-            const numeros = numeroterChapitre(ch);
             return (
-              <details class="chapitre accordeon">
-                <summary>
-                  <span class="chapitre-entete">
-                    <span class="chapitre-num">Chapitre {i + 1}</span>
-                    <h2>{ch.titre}</h2>
-                  </span>
-                  <span class="chevron" aria-hidden="true">⌄</span>
-                </summary>
+              <section class="chapitre">
+                <span class="chapitre-num">Chapitre {i + 1}</span>
+                <h2>{ch.titre}</h2>
 
                 <div class="colonnes">
                   {colonnes.map((nv) => (
@@ -65,30 +50,28 @@ function numeroterChapitre(ch) {
                       <p class="niveau-label">{nv.nom}</p>
                       <ul class="lecons">
                         {ch.niveaux[nv.id].map((c) => {
-                          const info = infosLecon(entreesLecons, m.id, ch.titre, c);
-                          const numero = `${i + 1}.${numeros.get(c)}`;
-                          return info
-                            ? <li><a href={info.url}><span class="numero">{numero}</span> {c}</a></li>
-                            : <li><span class="numero">{numero}</span> {c}</li>;
+                          const info = infosLecon(entrees, m.id, ch.titre, c);
+                          return info ? (
+                            <li>
+                              <a href={info.url}>
+                                <span class="lecon-num">{info.numero}</span> {c}
+                              </a>
+                            </li>
+                          ) : (
+                            <li>{c}</li>
+                          );
                         })}
                       </ul>
                     </div>
                   ))}
                 </div>
-              </details>
+              </section>
             );
           })
         )}
       </div>
     ))}
   </section>
-
-  <div class="bloc-equations">
-    <a href="/cours/equations" class="bouton-equations">
-      <span class="titre">📐 Fiches d'équations</span>
-      <span class="sous-titre muted">Toutes les formules, classées par matière et par chapitre</span>
-    </a>
-  </div>
 
   <style>
     .etape { margin: 2.5rem 0 1rem; text-transform: uppercase; letter-spacing: .1em; font-size: .8rem; }
@@ -115,23 +98,11 @@ function numeroterChapitre(ch) {
     }
     .retour:hover { color: var(--fg); }
 
-    /* ----- Chapitres (accordéon) ----- */
+    /* ----- Chapitres ----- */
     .vide { margin-top: 2rem; }
     .chapitre { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
-    .chapitre summary {
-      display: flex; justify-content: space-between; align-items: center; gap: 1rem;
-      cursor: pointer; list-style: none;
-    }
-    .chapitre summary::-webkit-details-marker { display: none; }
-    .chapitre-entete { display: block; }
     .chapitre-num { color: var(--accent); font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; }
-    .chapitre h2 { margin: .2rem 0 0; font-size: 1.5rem; }
-    .chapitre .chevron {
-      color: var(--muted); font-size: 1.3rem; line-height: 1; flex-shrink: 0; transition: transform .25s;
-    }
-    .chapitre[open] .chevron { transform: rotate(180deg); }
-    .chapitre summary:hover h2 { color: var(--accent); transition: color .2s; }
-    .chapitre .colonnes { margin-top: 1.25rem; }
+    .chapitre h2 { margin: .2rem 0 1.25rem; font-size: 1.5rem; }
 
     /* ----- Colonnes par niveau ----- */
     .colonnes {
@@ -145,20 +116,9 @@ function numeroterChapitre(ch) {
     }
     .lecons { margin: 0; padding-left: 1.1rem; color: var(--muted); }
     .lecons li { padding: .25rem 0; }
-    .lecons a { color: inherit; text-decoration: none; transition: color .2s; }
-    .lecons a:hover { color: var(--accent); }
-    .lecons .numero { color: var(--accent); font-variant-numeric: tabular-nums; }
-
-    /* ----- Bouton Équations ----- */
-    .bloc-equations { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--line); }
-    .bouton-equations {
-      display: flex; flex-direction: column; gap: .4rem;
-      padding: 1.5rem; border: 1px solid var(--line); border-radius: 12px;
-      text-decoration: none; transition: border-color .2s, box-shadow .2s;
-    }
-    .bouton-equations:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(0, 0, 0, .3); }
-    .bouton-equations .titre { font-size: 1.2rem; }
-    .bouton-equations .sous-titre { font-size: .95rem; }
+    .lecons a { color: var(--fg); text-decoration: none; transition: color .2s; }
+    .lecons a:hover { color: var(--accent); text-decoration: underline; }
+    .lecon-num { color: var(--accent); font-size: .85em; }
   </style>
 
   <script>
@@ -195,11 +155,5 @@ function numeroterChapitre(ch) {
       window.scrollTo({ top: 0 });
       apparaitre($(".matiere"));
     });
-
-    // Pré-sélection via l'URL (ex. lien "/cours#sciences" depuis une leçon)
-    const matiereCiblee = window.location.hash.slice(1);
-    if (matiereCiblee) {
-      document.querySelector(`.matiere[data-matiere="${matiereCiblee}"]`)?.click();
-    }
   </script>
 </Layout>

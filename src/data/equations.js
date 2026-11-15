@@ -119,6 +119,39 @@ export const equations = {
           variables: [{ symbole: "L<sub>n</sub>", description: "niveau de la source n", unite: "dB" }],
           note: "Deux sources de même niveau → +3 dB. Dix sources identiques → +10 dB.",
         },
+        {
+          nom: "Bande critique", niveau: "intermediaire",
+          formule: `Δf = ${frac("f · n", "50")}`,
+          variables: [
+            { symbole: "f", description: "fréquence centrale", unite: "Hz" },
+            { symbole: "n", description: "résolution fréquentielle de l'oreille à f", unite: "%" },
+          ],
+          note: "f<sub>max</sub> = f·(1 + n/100), f<sub>min</sub> = f·(1 − n/100). Avec n ≈ 0,3 % en zone sensible (500 Hz - 2 kHz).",
+        },
+        {
+          nom: "ERB (Equivalent Rectangular Bandwidth)", niveau: "confirme",
+          formule: `ERB(f) = 24,7 · (1 + ${frac("4,37 · f", "1000")})`,
+          variables: [{ symbole: "f", description: "fréquence centrale du filtre auditif", unite: "Hz" }],
+          note: "Modèle de Glasberg & Moore : largeur du filtre auditif rectangulaire équivalent.",
+        },
+        {
+          nom: "Échelle des mels (hauteur perçue)", niveau: "confirme",
+          formule: `mel = 2595 · log(1 + ${frac("f", "700")})`,
+          variables: [{ symbole: "f", description: "fréquence du son pur", unite: "Hz" }],
+          note: "Réciproque : f = 700 · (10^(mel/2595) − 1). Par convention, 1000 Hz = 1000 mel.",
+        },
+        {
+          nom: "Tempérament égal (rapport d'un demi-ton)", niveau: "intermediaire",
+          formule: "r = 2^(1/12) ≈ 1,05946",
+          variables: [{ symbole: "r", description: "rapport de fréquence entre deux demi-tons consécutifs" }],
+          note: "f · r¹² = 2f : douze demi-tons successifs reconstituent l'octave (×2).",
+        },
+        {
+          nom: "Écart en cents", niveau: "intermediaire",
+          formule: `cents = 1200 · log<sub>2</sub>(${frac("f<sub>2</sub>", "f<sub>1</sub>")})`,
+          variables: [{ symbole: "f<sub>1</sub>, f<sub>2</sub>", description: "fréquences comparées", unite: "Hz" }],
+          note: "100 cents = 1 demi-ton ; 1200 cents = 1 octave.",
+        },
       ],
     },
     {

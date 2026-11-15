@@ -1,0 +1,48 @@
+---
+// Encart "Entraînement" en bas d'une leçon : lien direct vers un quiz
+// pré-filtré (matière/chapitre/sous-chapitre) sur /entrainement/classes,
+// qui démarre directement (sans repasser par l'écran de réglages).
+// Le niveau n'est pas à préciser : pour un cours précis, /entrainement/classes
+// le déduit automatiquement du plan de cours (src/data/cours.js).
+// Utilisable dans une leçon .mdx :
+// <EntrainementLecon matiere="acoustique" chapitre="Généralités" sousChapitre="Qu'est-ce que le son ?" n={10} />
+const { matiere, chapitre, sousChapitre, n = 10 } = Astro.props;
+
+const params = new URLSearchParams({
+  matiere, chapitre, sousChapitre,
+  n: String(n), demarrer: "1",
+});
+const href = `/entrainement/classes?${params.toString()}`;
+---
+<aside class="entrainement-lecon">
+  <h2>Entraînement</h2>
+  <p>
+    <a href={href}>Teste tes connaissances sur cette leçon</a>
+    <span class="desc"> — {n} questions</span>
+  </p>
+</aside>
+
+<style>
+  .entrainement-lecon {
+    padding: 1.4rem 1.5rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+  }
+  .entrainement-lecon h2 {
+    margin: 0 0 .75rem;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .entrainement-lecon p { margin: 0; line-height: 1.5; }
+  .entrainement-lecon a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  .entrainement-lecon a:hover { border-bottom-color: var(--accent); }
+  .desc { color: var(--muted); font-size: .92rem; }
+</style>

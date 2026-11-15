@@ -51,6 +51,7 @@ const CATEGORIES = [
       { key: "fmax", col: 8, label: "F max", unite: "Hz", num: true, mieux: "haut", log: true, tableau: false },
       { key: "bruit", col: 9, label: "Bruit propre", unite: "dB(A)", num: true, mieux: "bas" },
       { key: "splmax", col: 10, label: "SPL max", unite: "dB SPL", num: true, mieux: "haut" },
+      { key: "annee", col: 16, label: "Année", num: true },
       // Recalculés à partir du bruit et du SPL max (conventions de l'onglet INFOS).
       // tableau: false → gardés pour le graphique/comparaison, masqués du récap (se retrouvent
       // facilement à partir du bruit propre et du SPL max, déjà affichés).
@@ -76,10 +77,11 @@ const CATEGORIES = [
       { key: "thd", col: 13, label: "THD", unite: "%", num: true, mieux: "bas", log: true },
       { key: "isolation", col: 14, label: "Isolation", unite: "dB", num: true, mieux: "haut" },
       { key: "prix", col: 15, label: "Prix", unite: "€", num: true, mieux: "bas", log: true },
+      { key: "annee", col: 18, label: "Année", num: true },
     ],
   },
   {
-    id: "enceintes", nom: "Enceintes actives", onglet: "HP actif", ficheCol: 13,
+    id: "enceintes", nom: "Enceintes actives", onglet: "HP actif", ficheCol: 14,
     colonnes: [
       { key: "puissance", col: 2, label: "Puissance RMS", unite: "W", num: true, mieux: "haut", log: true },
       { key: "f3", col: 3, label: "F basse (−3 dB)", unite: "Hz", num: true, mieux: "bas", log: true },
@@ -92,6 +94,7 @@ const CATEGORIES = [
       { key: "bruit", col: 10, label: "Bruit", unite: "dB(A)", num: true, mieux: "bas" },
       { key: "thd", col: 11, label: "THD grave", unite: "%", num: true, mieux: "bas" },
       { key: "prix", col: 12, label: "Prix (l'unité)", unite: "€", num: true, mieux: "bas", log: true },
+      { key: "annee", col: 13, label: "Année", num: true },
     ],
   },
   {
@@ -113,7 +116,7 @@ const CATEGORIES = [
     ],
   },
   {
-    id: "amplis", nom: "Amplis de puissance", onglet: "AMPLIS", ficheCol: 9,
+    id: "amplis", nom: "Amplis de puissance", onglet: "AMPLIS", ficheCol: 10,
     colonnes: [
       { key: "voies", col: 2, label: "Nombre de sorties", num: true },
       // Une colonne par type de puissance réellement publié (charge et/ou mode pontés) :
@@ -124,20 +127,43 @@ const CATEGORIES = [
       { key: "pponte", col: 6, label: "Puissance pontée (mono, 4 Ω)", unite: "W", num: true, mieux: "haut", log: true },
       { key: "zmin", col: 7, label: "Impédance mini", unite: "Ω", num: true, mieux: "bas" },
       { key: "prix", col: 8, label: "Prix", unite: "€", num: true, mieux: "bas", log: true },
+      { key: "annee", col: 9, label: "Année", num: true },
     ],
   },
   {
-    id: "cartesson", nom: "Cartes son", onglet: "CARTES SON", ficheCol: 11,
+    id: "cartesson", nom: "Cartes son", onglet: "CARTES SON", ficheCol: 20,
     colonnes: [
-      { key: "entrees", col: 2, label: "Entrées analogiques", num: true },
-      { key: "sorties", col: 3, label: "Sorties analogiques", num: true },
-      { key: "freqmax", col: 4, label: "Fréq. éch. max", unite: "kHz", num: true, mieux: "haut" },
-      { key: "bits", col: 5, label: "Résolution max", unite: "bits", num: true, mieux: "haut" },
-      { key: "drad", col: 6, label: "Dynamique A/D", unite: "dBA", num: true, mieux: "haut" },
-      { key: "drda", col: 7, label: "Dynamique D/A", unite: "dBA", num: true, mieux: "haut" },
-      { key: "gainmax", col: 8, label: "Gain préampli max", unite: "dB", num: true, mieux: "haut" },
-      { key: "connectivite", col: 9, label: "Connectivité", f: texte },
-      { key: "prix", col: 10, label: "Prix", unite: "€", num: true, mieux: "bas", log: true },
+      // tableau: false → gardées pour les filtres, les axes du graphique et la comparaison
+      // détaillée, mais masquées du tableau récapitulatif sous le graphique (jugées moins
+      // utiles au premier coup d'œil : interface, E/S secondaires, alim. fantôme).
+      { key: "interface", col: 2, label: "Interface", f: texte, tableau: false },
+      // menu: true → ces deux colonnes numériques (peu de valeurs distinctes : 0, 1, 2…)
+      // rejoignent Interface comme filtre en haut, en plus d'être masquées du tableau.
+      { key: "entreesmicligne", col: 3, label: "Entrées mic/ligne", num: true, mieux: "haut", tableau: false, menu: true },
+      { key: "entreesinstrument", col: 4, label: "Entrées instrument", num: true, mieux: "haut", tableau: false, menu: true },
+      { key: "sortiesligne", col: 5, label: "Sorties ligne", num: true, mieux: "haut", tableau: false },
+      { key: "sortiescasque", col: 6, label: "Sorties casque", num: true, mieux: "haut", tableau: false },
+      // menu: false → on ne garde que Marque + Interface (+ les entrées ci-dessus) comme
+      // critères de filtrage en haut ; alim. fantôme reste dans le comparateur (axes,
+      // comparaison détaillée) mais sans filtre dédié.
+      { key: "alim48v", col: 7, label: "Alim. 48V", f: texte, tableau: false, menu: false },
+      { key: "bits", col: 8, label: "Résolution", unite: "bits", num: true, mieux: "haut" },
+      { key: "freqmax", col: 9, label: "Fréq. éch. max", unite: "kHz", num: true, mieux: "haut" },
+      { key: "dynaentree", col: 10, label: "Dynamique entrée", unite: "dB", num: true, mieux: "haut" },
+      { key: "dynasortie", col: 11, label: "Dynamique sortie", unite: "dB", num: true, mieux: "haut" },
+      { key: "thdn", col: 12, label: "THD+N", unite: "dB", num: true, mieux: "bas" },
+      // Texte brut du constructeur (parfois « plage totale », parfois « maximum uniquement ») :
+      // gardé pour référence dans la comparaison détaillée, mais pas comme filtre (menu: false,
+      // valeurs quasi uniques par modèle) ni colonne du tableau — les deux valeurs numériques
+      // ci-dessous (quand connues) suffisent à comparer.
+      { key: "gaintexte", col: 13, label: "Gain (texte constructeur)", f: texte, tableau: false, menu: false },
+      { key: "gainmin", col: 14, label: "Gain min", unite: "dB", num: true, mieux: "bas", tableau: false },
+      { key: "gainmax", col: 15, label: "Gain max", unite: "dB", num: true, mieux: "haut" },
+      { key: "ein", col: 16, label: "EIN", unite: "dBu", num: true, mieux: "bas" },
+      { key: "sortiemax", col: 17, label: "Sortie max", unite: "dBu", num: true, mieux: "haut" },
+      { key: "alimentation", col: 18, label: "Alimentation", f: texte, tableau: false, menu: false },
+      { key: "prix", col: 19, label: "Prix", unite: "€", num: true, mieux: "bas", log: true },
+      { key: "annee", col: 21, label: "Année", num: true },
     ],
   },
 ];

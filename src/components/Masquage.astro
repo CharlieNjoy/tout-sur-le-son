@@ -1,0 +1,223 @@
+---
+// =====================================================================
+//  EFFET DE MASQUAGE : un son fort (masquant) relève le seuil d'audition
+//  autour de sa fréquence et peut rendre un son plus faible (sonde) inaudible
+//
+//  Échelle de Bark (Zwicker & Terhardt, 1980) :
+//  z(f) = 13·atan(0.00076·f) + 3.5·atan((f/7500)²)
+//
+//  Fonction d'étalement de Schroeder (modèle psychoacoustique MPEG-1
+//  Layer I/II, Painter & Spanias 2000) — asymétrique sur l'échelle de Bark :
+//  SF(Δz) = 15.81 + 7.5(Δz+0.474) − 17.5·√(1+(Δz+0.474)²)        [dB]
+//  Seuil(f) = Lmasquant + SF( z(f) − z(fmasquant) )
+//
+//  Seuil d'audition en silence, champ libre (Terhardt, 1979) :
+//  ATH(f) = 3.64(f/1000)^-0.8 − 6.5·exp(−0.6(f/1000−3.3)²) + 10⁻³(f/1000)⁴
+// =====================================================================
+import "../styles/applis.css";
+---
+<div class="appli masquage">
+
+  <div class="ecran">
+    <p class="ecran-titre">Seuil d'audition en silence (pointillé) et seuil de masquage dû au son masquant (plein, zone bleutée)</p>
+    <canvas class="spectre"></canvas>
+  </div>
+
+  <div class="reglages">
+    <label>
+      <span class="nom">Fréquence masquante <strong class="val-fm">1000 Hz</strong></span>
+      <input type="range" class="curseur-fm" min="0" max="1000" value="774" />
+    </label>
+    <label>
+      <span class="nom">Niveau masquant <strong class="val-lm">70 dB</strong></span>
+      <input type="range" class="curseur-lm" min="0" max="90" value="70" />
+    </label>
+    <label>
+      <span class="nom">Fréquence sonde <strong class="val-fp">1200 Hz</strong></span>
+      <input type="range" class="curseur-fp" min="0" max="1000" value="815" />
+    </label>
+    <label>
+      <span class="nom">Niveau sonde <strong class="val-lp">50 dB</strong></span>
+      <input type="range" class="curseur-lp" min="0" max="90" value="50" />
+    </label>
+    <label>
+      <span class="nom">Volume d'écoute <strong class="val-a">60 %</strong></span>
+      <input type="range" class="curseur-a" min="0" max="100" value="60" />
+    </label>
+  </div>
+
+  <div class="reglages ligne-ecoute">
+    <button class="bouton-son">▶ Écouter les deux sons</button>
+    <label class="case">
+      <input type="checkbox" class="case-isole" />
+      <span class="nom">Isoler la sonde (comparer sans le son masquant)</span>
+    </label>
+  </div>
+
+  <p class="verdict"></p>
+  <dl class="mesures"></dl>
+
+  <p class="note">
+    Le son masquant élève le seuil d'audition autour de sa fréquence (modèle d'étalement de
+    Schroeder/Terhardt sur l'échelle de Bark, utilisé notamment dans le codage perceptif MPEG).
+    Cet étalement est asymétrique : il déborde plus fortement vers les fréquences aiguës que vers
+    les graves. La sonde n'est entendue que si son niveau dépasse à la fois ce seuil de masquage et
+    le seuil d'audition en silence. Les niveaux affichés sont relatifs (non calibrés en SPL réel) :
+    le résultat à l'écoute dépend donc du volume réel de votre casque ou de vos haut-parleurs.
+  </p>
+</div>
+
+<style>
+  .ecran .spectre { height: 300px; }
+  .masquage .ligne-ecoute { align-items: center; }
+  .masquage .case { display: flex; align-items: center; gap: .6rem; }
+  .masquage .case .nom { color: var(--muted); font-size: .9rem; }
+  .masquage .verdict { margin: 0; font-size: 1.05rem; font-weight: 500; }
+  .masquage .verdict.audible { color: #7ee787; }
+  .masquage .verdict.masque { color: #f87171; }
+</style>
+
+<script>
+  import { fmt, couleurs, logVers, preparerCanvas, boutonSon, xLog, grilleSpectre } from "../scripts/outils.js";
+
+  const F_MIN = 100, F_MAX = 8000;
+
+  // Échelle de Bark (Zwicker & Terhardt, 1980)
+  const bark = (f) => 13 * Math.atan(0.00076 * f) + 3.5 * Math.atan(Math.pow(f / 7500, 2));
+  // Fonction d'étalement de Schroeder (modèle psychoacoustique MPEG-1 Layer I/II)
+  const etalement = (dz) => {
+    const d = dz + 0.474;
+    return 15.81 + 7.5 * d - 17.5 * Math.sqrt(1 + d * d);
+  };
+  const seuilMasquage = (f, fm, Lm) => Lm + etalement(bark(f) - bark(fm));
+  // Seuil d'audition en champ libre (Terhardt, 1979)
+  const seuilAbsolu = (f) => {
+    const k = f / 1000;
+    return 3.64 * Math.pow(k, -0.8) - 6.5 * Math.exp(-0.6 * Math.pow(k - 3.3, 2)) + 0.001 * Math.pow(k, 4);
+  };
+  const gainDe = (L) => Math.pow(10, (L - 70) / 20);
+
+  document.querySelectorAll(".masquage").forEach((racine) => {
+    const $ = (s) => racine.querySelector(s);
+    const coul = couleurs();
+    const ecran = $(".spectre");
+    const ctx = preparerCanvas(ecran, () => dessiner());
+
+    const etat = { fm: 1000, Lm: 70, fp: 1200, Lp: 50, a: 0.6, isole: false };
+
+    function courbe(w, yDB, fn) {
+      const N = 200;
+      for (let i = 0; i <= N; i++) {
+        const f = 20 * Math.pow(1000, i / N); // 20 Hz à 20 000 Hz, échelle log
+        const x = xLog(f, w), y = yDB(fn(f));
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+    }
+
+    function dessiner() {
+      const w = ecran.clientWidth, h = ecran.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+      const bas = h - 10;
+      const yDB = grilleSpectre(ctx, { w, h, haut: 20, bas, dBmax: 100, dBmin: 0, pasDB: 20, unite: "dB", coul });
+
+      // Zone masquée : remplissage sous la courbe de masquage
+      ctx.beginPath();
+      courbe(w, yDB, (f) => seuilMasquage(f, etat.fm, etat.Lm));
+      ctx.lineTo(w, bas); ctx.lineTo(0, bas); ctx.closePath();
+      ctx.fillStyle = "rgba(110, 231, 255, .10)";
+      ctx.fill();
+
+      // Contour de la courbe de masquage
+      ctx.beginPath();
+      courbe(w, yDB, (f) => seuilMasquage(f, etat.fm, etat.Lm));
+      ctx.strokeStyle = coul.accent; ctx.lineWidth = 1.5; ctx.stroke();
+
+      // Seuil d'audition en silence (pointillé)
+      ctx.beginPath();
+      ctx.setLineDash([4, 4]);
+      courbe(w, yDB, seuilAbsolu);
+      ctx.strokeStyle = coul.gris; ctx.lineWidth = 1; ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Son masquant : barre verticale
+      const xm = xLog(etat.fm, w);
+      ctx.strokeStyle = coul.texte; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(xm, bas); ctx.lineTo(xm, yDB(etat.Lm)); ctx.stroke();
+      ctx.fillStyle = coul.texte;
+      ctx.beginPath(); ctx.arc(xm, yDB(etat.Lm), 3, 0, 2 * Math.PI); ctx.fill();
+
+      // Son sonde : point coloré selon audibilité
+      const xp = xLog(etat.fp, w), yp = yDB(etat.Lp);
+      const audible = etat.Lp > Math.max(seuilMasquage(etat.fp, etat.fm, etat.Lm), seuilAbsolu(etat.fp));
+      const coulSonde = audible ? "#7ee787" : "#f87171";
+      ctx.strokeStyle = coulSonde; ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(xp, bas); ctx.lineTo(xp, yp); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = coulSonde;
+      ctx.beginPath(); ctx.arc(xp, yp, 4, 0, 2 * Math.PI); ctx.fill();
+    }
+
+    const son = boutonSon($(".bouton-son"), {
+      volume: () => etat.a,
+      demarrer: (ac, sortie) => {
+        const mix = ac.createGain(); mix.gain.value = 1; mix.connect(sortie);
+        const om = ac.createOscillator(), gm = ac.createGain();
+        const op = ac.createOscillator(), gp = ac.createGain();
+        om.frequency.value = etat.fm; op.frequency.value = etat.fp;
+        gm.gain.value = etat.isole ? 0 : gainDe(etat.Lm);
+        gp.gain.value = gainDe(etat.Lp);
+        om.connect(gm).connect(mix); op.connect(gp).connect(mix);
+        const t0 = ac.currentTime + 0.05;
+        om.start(t0); op.start(t0);
+        return { om, op, gm, gp };
+      },
+      arreter: () => dessiner(),
+    });
+
+    function maj() {
+      etat.fm = logVers($(".curseur-fm").value, F_MIN, F_MAX);
+      etat.Lm = +$(".curseur-lm").value;
+      etat.fp = logVers($(".curseur-fp").value, F_MIN, F_MAX);
+      etat.Lp = +$(".curseur-lp").value;
+      etat.a = $(".curseur-a").value / 100;
+      etat.isole = $(".case-isole").checked;
+
+      $(".val-fm").textContent = `${fmt(etat.fm)} Hz`;
+      $(".val-lm").textContent = `${fmt(etat.Lm)} dB`;
+      $(".val-fp").textContent = `${fmt(etat.fp)} Hz`;
+      $(".val-lp").textContent = `${fmt(etat.Lp)} dB`;
+      $(".val-a").textContent = `${$(".curseur-a").value} %`;
+
+      const seuilM = seuilMasquage(etat.fp, etat.fm, etat.Lm);
+      const seuilA = seuilAbsolu(etat.fp);
+      const marge = etat.Lp - Math.max(seuilM, seuilA);
+      const audible = marge > 0;
+
+      const mesures = [
+        ["Écart masquant → sonde", `${fmt(bark(etat.fp) - bark(etat.fm), 2)} Bark`],
+        ["Seuil de masquage à f sonde", `${fmt(seuilM, 1)} dB`],
+        ["Seuil d'audition en silence à f sonde", `${fmt(seuilA, 1)} dB`],
+        ["Marge (niveau sonde − seuil)", `${marge >= 0 ? "+" : ""}${fmt(marge, 1)} dB`],
+      ];
+      $(".mesures").innerHTML = mesures.map(([dt, dd]) => `<div><dt>${dt}</dt><dd>${dd}</dd></div>`).join("");
+
+      const verdict = $(".verdict");
+      verdict.textContent = audible ? "🔊 La sonde est audible" : "🔇 La sonde est masquée";
+      verdict.className = `verdict ${audible ? "audible" : "masque"}`;
+
+      const s = son.actif();
+      if (s) {
+        s.om.frequency.setTargetAtTime(etat.fm, s.ac.currentTime, 0.02);
+        s.op.frequency.setTargetAtTime(etat.fp, s.ac.currentTime, 0.02);
+        s.gm.gain.setTargetAtTime(etat.isole ? 0 : gainDe(etat.Lm), s.ac.currentTime, 0.02);
+        s.gp.gain.setTargetAtTime(gainDe(etat.Lp), s.ac.currentTime, 0.02);
+        son.volume(etat.a);
+      }
+      dessiner();
+    }
+
+    racine.querySelectorAll("input").forEach((c) => c.addEventListener("input", maj));
+    maj();
+  });
+</script>

@@ -1,22 +1,24 @@
 ---
 import "../styles/applis.css";
-import { questions, MATIERES, OPTIONS, annees, libelleAnnee } from "../data/entrainement-bts.js";
+import { questions, MATIERES, annees, libelleAnnee } from "../data/entrainement-bts.js";
 
 const matieres = Object.entries(MATIERES); // [[id, label], ...]
-const options = Object.entries(OPTIONS);
+// Les questions "cours" (contrôle de compréhension par leçon) sont réservées
+// aux mini-quiz de la page Cours (voir QuizLecon.astro) : on ne les mélange
+// pas aux vraies annales BTS ici.
+const questionsAnnales = questions.filter((q) => q.annee !== "cours");
+const anneesAnnales = annees.filter((a) => a !== "cours");
 ---
 <div class="appli entrainement-bts">
   <!-- Données transmises au script -->
-  <script type="application/json" id="donnees-entrainement" set:html={JSON.stringify(questions)} />
+  <script type="application/json" id="donnees-entrainement" set:html={JSON.stringify(questionsAnnales)} />
 
   <!-- ===== ÉCRAN 1 : réglages ===== -->
   <div class="ecran-reglages">
     <div>
       <p class="groupe-titre">Option</p>
       <div class="puces" data-groupe="option">
-        {options.map(([id, label], i) => (
-          <button type="button" class={`puce ${i === 0 ? "actif" : ""}`} data-valeur={id}>{label}</button>
-        ))}
+        <button type="button" class="puce actif" data-valeur="son">Son</button>
       </div>
     </div>
 
@@ -34,7 +36,7 @@ const options = Object.entries(OPTIONS);
       <p class="groupe-titre">Année</p>
       <div class="puces" data-groupe="annee">
         <button type="button" class="puce actif" data-valeur="toutes">Toutes (aléatoire)</button>
-        {annees.map((a) => (
+        {anneesAnnales.map((a) => (
           <button type="button" class="puce" data-valeur={a}>{libelleAnnee(a)}</button>
         ))}
       </div>
@@ -49,11 +51,6 @@ const options = Object.entries(OPTIONS);
     </div>
 
     <p class="muted note" id="compte-dispo"></p>
-
-    <div class="historique" id="historique" hidden>
-      <p class="groupe-titre">Dernières tentatives</p>
-      <div class="historique-lignes" id="historique-lignes"></div>
-    </div>
   </div>
 
   <!-- ===== ÉCRAN 2 : question ===== -->
@@ -103,16 +100,6 @@ const options = Object.entries(OPTIONS);
     border: 1px solid var(--line); border-radius: 8px;
   }
   .nombre input:focus { outline: none; border-color: var(--accent); }
-  #demarrer:disabled { opacity: .45; cursor: not-allowed; }
-
-  /* ----- Historique ----- */
-  .historique { margin-top: .5rem; }
-  .historique-lignes { display: grid; gap: .5rem; margin-top: .6rem; }
-  .historique-ligne {
-    display: flex; justify-content: space-between; gap: 1rem; font-size: .83rem;
-    padding: .55rem .8rem; border: 1px solid var(--line); border-radius: 8px; color: var(--muted);
-  }
-  .historique-ligne .note { color: var(--fg); font-weight: 500; }
 
   /* ----- Question ----- */
   .quiz-entete { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; }
@@ -164,43 +151,8 @@ const options = Object.entries(OPTIONS);
     electricite: "Électricité",
   };
   const libelleAnnee = (a) => (a === "0" ? "Sujet zéro" : a);
-  const LABELS_OPTION = Object.fromEntries(
-    [...racine.querySelectorAll('[data-groupe="option"] .puce')].map((b) => [b.dataset.valeur, b.textContent])
-  );
-
-  // ----- Historique des tentatives (localStorage, best-effort) -----
-  const CLE_HISTORIQUE = "entrainement-bts-historique";
-  function chargerHistorique() {
-    try {
-      const brut = window.localStorage.getItem(CLE_HISTORIQUE);
-      return brut ? JSON.parse(brut) : [];
-    } catch { return []; }
-  }
-  function enregistrerTentative(t) {
-    try {
-      const h = chargerHistorique();
-      h.unshift(t);
-      window.localStorage.setItem(CLE_HISTORIQUE, JSON.stringify(h.slice(0, 20)));
-    } catch { /* stockage indisponible : on ignore */ }
-  }
-  function afficherHistorique() {
-    const bloc = racine.querySelector("#historique");
-    const lignes = racine.querySelector("#historique-lignes");
-    const h = chargerHistorique();
-    if (h.length === 0) { bloc.hidden = true; return; }
-    bloc.hidden = false;
-    lignes.innerHTML = "";
-    h.slice(0, 5).forEach((t) => {
-      const div = document.createElement("div");
-      div.className = "historique-ligne";
-      const date = new Date(t.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
-      div.innerHTML = `<span>${date} · ${LABELS_OPTION[t.option] ?? t.option}${t.matiere !== "toutes" ? " · " + (LABELS_MATIERE[t.matiere] ?? t.matiere) : ""}${t.annee !== "toutes" ? " · " + libelleAnnee(t.annee) : ""}</span><span class="note">${t.bonnes}/${t.total} (${t.pct}%)</span>`;
-      lignes.appendChild(div);
-    });
-  }
 
   // ----- États des filtres -----
-  let optionChoisie = racine.querySelector('[data-groupe="option"] .puce.actif')?.dataset.valeur || "son";
   let matiereChoisie = "toutes";
   let anneeChoisie = "toutes";
 
@@ -221,7 +173,6 @@ const options = Object.entries(OPTIONS);
 
   function dispo() {
     return toutes.filter((q) =>
-      q.option === optionChoisie &&
       (matiereChoisie === "toutes" || q.matiere === matiereChoisie) &&
       (anneeChoisie === "toutes" || q.annee === anneeChoisie)
     );
@@ -229,11 +180,9 @@ const options = Object.entries(OPTIONS);
 
   function majCompte() {
     const n = dispo().length;
-    const demarrerBouton = racine.querySelector("#demarrer");
     compteDispo.textContent = n > 0
       ? `${n} question${n > 1 ? "s" : ""} disponible${n > 1 ? "s" : ""} pour cette sélection.`
-      : `Aucune question en banque pour l'option « ${LABELS_OPTION[optionChoisie] ?? optionChoisie} » pour l'instant — revenez bientôt.`;
-    demarrerBouton.disabled = n === 0;
+      : "Aucune question pour cette combinaison, essayez une autre sélection.";
     nbInput.max = String(Math.max(n, 1));
     if (Number(nbInput.value) > n) nbInput.value = String(Math.max(n, 1));
   }
@@ -243,9 +192,9 @@ const options = Object.entries(OPTIONS);
     const nom = groupe.dataset.groupe;
     groupe.querySelectorAll(".puce").forEach((bouton) => {
       bouton.addEventListener("click", () => {
+        if (nom === "option") return; // une seule option pour l'instant
         groupe.querySelectorAll(".puce").forEach((b) => b.classList.remove("actif"));
         bouton.classList.add("actif");
-        if (nom === "option") optionChoisie = bouton.dataset.valeur || "son";
         if (nom === "matiere") matiereChoisie = bouton.dataset.valeur || "toutes";
         if (nom === "annee") anneeChoisie = bouton.dataset.valeur || "toutes";
         majCompte();
@@ -253,7 +202,6 @@ const options = Object.entries(OPTIONS);
     });
   });
   majCompte();
-  afficherHistorique();
 
   // ----- Déroulé du quiz -----
   let file = [];
@@ -355,11 +303,6 @@ const options = Object.entries(OPTIONS);
     const pct = Math.round((bonnes / total) * 100);
     racine.querySelector("#score-note").textContent = `${pct}%`;
     racine.querySelector("#score-bonnes").textContent = `${bonnes} / ${total}`;
-
-    enregistrerTentative({
-      date: Date.now(), option: optionChoisie, matiere: matiereChoisie, annee: anneeChoisie,
-      bonnes, total, pct,
-    });
 
     // Score par matière
     const parMatiere = {};

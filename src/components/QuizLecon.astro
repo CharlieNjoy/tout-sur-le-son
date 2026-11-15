@@ -1,0 +1,190 @@
+---
+// Mini QCM (repliable) à partir de questions issues de entrainement-bts.js
+// (voir questionsPourLecon() / questionsPourChapitre()). Chaque instance est
+// repliée par défaut ; le script global (une seule copie, dédupliquée par
+// Astro) pilote toutes les instances de la page.
+const { questions, id, titre = "Tester mes connaissances", limite } = Astro.props;
+const nbAffiche = limite ? Math.min(limite, questions.length) : questions.length;
+---
+<div class="mini-quiz" data-id={id} data-limite={limite ?? ""}>
+  <script type="application/json" class="mini-quiz-donnees" set:html={JSON.stringify(questions)} />
+
+  <button type="button" class="mini-quiz-toggle">
+    <span class="mini-quiz-icone">✎</span>
+    <span class="mini-quiz-texte">{titre}</span>
+    <span class="mini-quiz-nb">{nbAffiche} question{nbAffiche > 1 ? "s" : ""}</span>
+  </button>
+
+  <div class="mini-quiz-corps" hidden>
+    <!-- écran question -->
+    <div class="mq-ecran mq-question">
+      <div class="mq-entete">
+        <span class="mq-position muted"></span>
+      </div>
+      <div class="mq-barre"><div class="mq-barre-remplie"></div></div>
+      <p class="mq-enonce"></p>
+      <div class="mq-choix"></div>
+      <div class="mq-correction" hidden>
+        <p class="mq-verdict"></p>
+        <p class="mq-explication muted"></p>
+        <p class="mq-source muted"></p>
+        <button type="button" class="mq-suivant bouton-son">Suivant</button>
+      </div>
+    </div>
+
+    <!-- écran score -->
+    <div class="mq-ecran mq-score" hidden>
+      <p class="mq-score-texte"></p>
+      <button type="button" class="mq-recommencer bouton-son">Recommencer</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .mini-quiz { max-width: 560px; }
+
+  .mini-quiz-toggle {
+    font: inherit; font-size: .82rem; cursor: pointer;
+    display: inline-flex; align-items: center; gap: .5rem;
+    padding: .35rem .7rem; border-radius: 999px;
+    border: 1px solid var(--line); background: none; color: var(--muted);
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .mini-quiz-toggle:hover { border-color: var(--accent); color: var(--fg); }
+  .mini-quiz-toggle[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); background: rgba(110, 231, 255, .08); }
+  .mini-quiz-icone { font-size: .85rem; }
+  .mini-quiz-nb { font-size: .72rem; color: var(--muted); }
+
+  .mini-quiz-corps { margin-top: .9rem; max-width: 520px; }
+
+  .mq-entete { display: flex; justify-content: flex-end; font-size: .78rem; }
+  .mq-barre { height: 3px; background: var(--line); border-radius: 2px; margin: .4rem 0 1rem; overflow: hidden; }
+  .mq-barre-remplie { height: 100%; background: var(--accent); width: 0%; transition: width .3s; }
+  .mq-enonce { font-size: 1rem; font-weight: 400; line-height: 1.5; margin: 0 0 .9rem; color: var(--fg); }
+
+  .mq-choix { display: grid; gap: .55rem; }
+  .mq-option {
+    font: inherit; font-size: .92rem; text-align: left; cursor: pointer; padding: .65rem .85rem;
+    border: 1px solid var(--line); border-radius: 10px; background: none; color: var(--fg);
+    transition: border-color .2s, background .2s;
+  }
+  .mq-option:hover:not(:disabled) { border-color: var(--accent); }
+  .mq-option:disabled { cursor: default; }
+  .mq-option.bonne { border-color: #6fdc8c; background: rgba(111, 220, 140, .1); }
+  .mq-option.mauvaise { border-color: #ff6b5a; background: rgba(255, 107, 90, .1); }
+
+  .mq-correction { margin-top: 1rem; display: grid; gap: .35rem; }
+  .mq-verdict { font-size: .95rem; margin: 0; }
+  .mq-verdict.ok { color: #6fdc8c; }
+  .mq-verdict.ko { color: #ff6b5a; }
+  .mq-explication, .mq-source { font-size: .85rem; margin: 0; }
+  .mq-source { font-style: italic; }
+  .mq-suivant { margin-top: .4rem; font-size: .85rem; padding: .5rem 1.1rem; }
+
+  .mq-score-texte { font-size: 1rem; margin: 0 0 .9rem; }
+  .mq-recommencer { font-size: .85rem; padding: .5rem 1.1rem; }
+</style>
+
+<script>
+  function melanger(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function initMiniQuiz(racine) {
+    const donnees = JSON.parse(racine.querySelector(".mini-quiz-donnees").textContent);
+    const limite = Number(racine.dataset.limite) || donnees.length;
+    const toggle = racine.querySelector(".mini-quiz-toggle");
+    const corps = racine.querySelector(".mini-quiz-corps");
+    const ecranQuestion = racine.querySelector(".mq-question");
+    const ecranScore = racine.querySelector(".mq-score");
+
+    let file = [];
+    let index = 0;
+    let bonnes = 0;
+
+    function demarrer() {
+      file = melanger(donnees).slice(0, limite);
+      index = 0;
+      bonnes = 0;
+      ecranScore.hidden = true;
+      ecranQuestion.hidden = false;
+      afficherQuestion();
+    }
+
+    function afficherQuestion() {
+      const q = file[index];
+      racine.querySelector(".mq-position").textContent = `Question ${index + 1} / ${file.length}`;
+      racine.querySelector(".mq-barre-remplie").style.width = `${(index / file.length) * 100}%`;
+      racine.querySelector(".mq-enonce").textContent = q.question;
+      racine.querySelector(".mq-correction").hidden = true;
+
+      const ordre = melanger(q.choix.map((texte, i) => ({ texte, bonne: i === q.correct })));
+      const choixDiv = racine.querySelector(".mq-choix");
+      choixDiv.innerHTML = "";
+      ordre.forEach((c) => {
+        const bouton = document.createElement("button");
+        bouton.type = "button";
+        bouton.className = "mq-option";
+        bouton.textContent = c.texte;
+        bouton.addEventListener("click", () => repondre(bouton, c.bonne, q));
+        choixDiv.appendChild(bouton);
+      });
+    }
+
+    function repondre(bouton, bonne, q) {
+      const options = [...racine.querySelectorAll(".mq-option")];
+      options.forEach((o) => (o.disabled = true));
+      options.forEach((o) => {
+        if (o === bouton) o.classList.add(bonne ? "bonne" : "mauvaise");
+      });
+      if (!bonne) {
+        const texteCorrect = q.choix[q.correct];
+        const b = options.find((o) => o.textContent === texteCorrect);
+        b?.classList.add("bonne");
+      }
+      if (bonne) bonnes++;
+
+      const verdict = racine.querySelector(".mq-verdict");
+      verdict.textContent = bonne ? "Bonne réponse." : "Mauvaise réponse.";
+      verdict.className = `mq-verdict ${bonne ? "ok" : "ko"}`;
+      racine.querySelector(".mq-explication").textContent = q.explication;
+      racine.querySelector(".mq-source").textContent = `Source : ${q.source}`;
+      racine.querySelector(".mq-correction").hidden = false;
+    }
+
+    racine.querySelector(".mq-suivant").addEventListener("click", () => {
+      index++;
+      if (index >= file.length) afficherScore();
+      else afficherQuestion();
+    });
+
+    function afficherScore() {
+      ecranQuestion.hidden = true;
+      ecranScore.hidden = false;
+      const pct = Math.round((bonnes / file.length) * 100);
+      racine.querySelector(".mq-score-texte").textContent =
+        `Score : ${bonnes} / ${file.length} (${pct}%)`;
+    }
+
+    racine.querySelector(".mq-recommencer").addEventListener("click", demarrer);
+
+    toggle.addEventListener("click", () => {
+      const estOuvert = !corps.hidden;
+      if (estOuvert) {
+        corps.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+      } else {
+        corps.hidden = false;
+        toggle.setAttribute("aria-expanded", "true");
+        if (file.length === 0) demarrer();
+      }
+    });
+  }
+
+  document.querySelectorAll(".mini-quiz").forEach(initMiniQuiz);
+</script>

@@ -1,0 +1,17 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Masquage from "../../components/Masquage.astro";
+---
+<Layout title="Masquage" description="Un son fort peut rendre un son plus faible inaudible : seuil de masquage et bande critique.">
+  <a href="/applications" class="retour muted">← Applications</a>
+  <h1>Effet de masquage</h1>
+  <p class="muted intro">Un son fort peut rendre un son plus faible inaudible selon leur écart de fréquence : seuil de masquage et bande critique.</p>
+
+  <Masquage />
+
+  <style>
+    .retour { display: inline-block; margin-bottom: 1.5rem; text-decoration: none; font-size: .9rem; transition: color .2s; }
+    .retour:hover { color: var(--fg); }
+    .intro { margin: 0 0 2rem; }
+  </style>
+</Layout>

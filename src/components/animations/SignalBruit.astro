@@ -1,0 +1,98 @@
+---
+// Comparaison visuelle de deux signaux bruités : bon vs mauvais rapport
+// signal/bruit (S/B). Chaque panneau trace en continu une sinusoïde (le
+// signal utile) perturbée par un bruit aléatoire d'amplitude différente.
+// Utilisable dans une leçon .mdx : <SignalBruit />
+---
+<div class="panneaux-snr">
+  <figure class="ecran-anim">
+    <canvas class="anim-snr" data-bruit="0.08"></canvas>
+    <figcaption>Bon rapport signal/bruit<span>le signal reste net malgré un bruit faible</span></figcaption>
+  </figure>
+  <figure class="ecran-anim">
+    <canvas class="anim-snr" data-bruit="0.9"></canvas>
+    <figcaption>Mauvais rapport signal/bruit<span>le bruit masque presque le signal utile</span></figcaption>
+  </figure>
+</div>
+
+<style>
+  .panneaux-snr {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1rem;
+  }
+  .ecran-anim { margin: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .ecran-anim canvas { display: block; width: 100%; height: 150px; }
+  .ecran-anim figcaption {
+    padding: .6rem .9rem;
+    border-top: 1px solid var(--line);
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--fg);
+    text-align: center;
+  }
+  .ecran-anim figcaption span {
+    display: block;
+    margin-top: .15rem;
+    font-size: .72rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+</style>
+
+<script>
+  function demarrer(canvas) {
+    const ctx = canvas.getContext("2d");
+    const styles = getComputedStyle(document.documentElement);
+    const ACCENT = styles.getPropertyValue("--accent").trim();
+    const MUTED = styles.getPropertyValue("--muted").trim();
+    const bruitAmp = parseFloat(canvas.dataset.bruit || "0.1");
+
+    const FREQ = 0.9; // cycles visibles sur la largeur du cadre
+
+    function redim() {
+      const r = canvas.getBoundingClientRect();
+      canvas.width = r.width * devicePixelRatio;
+      canvas.height = r.height * devicePixelRatio;
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+    new ResizeObserver(redim).observe(canvas);
+    redim();
+
+    const depart = performance.now();
+    function dessiner(maintenant) {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      const milieu = h / 2;
+      const ampSignal = h * 0.3;
+      ctx.clearRect(0, 0, w, h);
+
+      // Ligne de zéro
+      ctx.strokeStyle = MUTED;
+      ctx.globalAlpha = .35;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, milieu);
+      ctx.lineTo(w, milieu);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Signal utile (sinus) + bruit aléatoire, recombinés à chaque frame
+      const t = (maintenant - depart) / 1000;
+      ctx.beginPath();
+      ctx.strokeStyle = ACCENT;
+      ctx.lineWidth = 2;
+      for (let x = 0; x <= w; x += 2) {
+        const phase = (x / w) * FREQ * Math.PI * 2 + t * 1.6;
+        const bruit = (Math.random() * 2 - 1) * ampSignal * bruitAmp;
+        const y = milieu - Math.sin(phase) * ampSignal - bruit;
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      requestAnimationFrame(dessiner);
+    }
+    requestAnimationFrame(dessiner);
+  }
+
+  document.querySelectorAll(".anim-snr").forEach(demarrer);
+</script>

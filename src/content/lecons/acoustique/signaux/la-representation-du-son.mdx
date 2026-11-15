@@ -1,11 +1,70 @@
 ---
 titre: "La représentation du son"
-ordre: 1
+ordre: 2
 references:
   - titre: "Support de cours (PDF) — Généralités des signaux"
     url: "/cours-pdf/acoustique/2-1-generalites-des-signaux.pdf"
     description: "Diapositives du cours de Charlie"
+  - titre: "Waveform"
+    url: "https://en.wikipedia.org/wiki/Waveform"
+    description: "Wikipedia — définition et exemples de formes d'onde (sinusoïdale, carrée, triangulaire, dent de scie)"
+  - titre: "File:Sine one period.svg"
+    url: "https://commons.wikimedia.org/wiki/File:Sine_one_period.svg"
+    description: "Wikimedia Commons, domaine public (Geek3) — tracé de référence d'une sinusoïde sur une période"
 ---
-Un son peut se représenter de deux façons complémentaires. Dans le **domaine temporel**, on trace l'amplitude (la pression) en fonction du temps : c'est la forme d'onde, celle qu'on voit dans un logiciel audio. Dans le **domaine fréquentiel**, on trace l'énergie du signal en fonction de la fréquence : c'est le spectre.
+import SchemaAxesTemporels from "../../../../components/mdx/SchemaAxesTemporels.astro";
+import GalerieFormesOnde from "../../../../components/mdx/GalerieFormesOnde.astro";
+import Encadre from "../../../../components/mdx/Encadre.astro";
+import LiensApplications from "../../../../components/mdx/LiensApplications.astro";
 
-Les deux représentations contiennent exactement la même information, simplement organisée différemment — la transformée de Fourier permet de passer de l'une à l'autre (voir plus loin dans ce chapitre).
+## Deux façons de regarder le même signal
+
+Un son peut se représenter de deux façons complémentaires. Dans le **domaine temporel**, on trace l'amplitude (la pression) en fonction du temps : c'est la forme d'onde, celle qu'on voit dans n'importe quel logiciel audio. Dans le **domaine fréquentiel**, on trace l'énergie du signal en fonction de la fréquence : c'est le spectre (voir la leçon [Le spectre](/cours)).
+
+Les deux représentations contiennent exactement la même information, simplement organisée différemment — la transformée de Fourier permet de passer de l'une à l'autre.
+
+## La représentation temporelle
+
+C'est la façon la plus intuitive de voir un signal : on trace littéralement **comment la pression varie seconde après seconde**. C'est ce que montre l'écran d'un oscilloscope, ou la forme d'onde affichée sous une piste dans un logiciel audio (DAW).
+
+<SchemaAxesTemporels legende="Représentation temporelle : amplitude en ordonnée, temps en abscisse." />
+
+Deux axes, et rien d'autre :
+
+- **L'axe horizontal (t)** : le temps qui passe, de gauche à droite.
+- **L'axe vertical (amplitude)** : la valeur du signal à cet instant — une pression acoustique en Pascal, ou une tension électrique en Volt côté électroacoustique.
+
+Deux grandeurs se lisent directement sur ce tracé :
+
+- **L'amplitude (A)** : l'écart entre le niveau zéro (repos) et le sommet de l'onde. Plus elle est grande, plus le son est fort.
+- **La période (T)** : la durée d'un cycle complet avant que le motif ne se répète. Son inverse donne la fréquence (f = 1/T), exprimée en Hertz.
+
+<Encadre>Ce que la représentation temporelle montre bien : l'intensité au fil du temps (une attaque, un silence, un fondu). Ce qu'elle cache : la composition en fréquences du signal — pour ça, il faut passer au spectre.</Encadre>
+
+## Toutes les ondes ne se ressemblent pas
+
+La sinusoïde est la forme la plus simple — un seul ton pur, une seule fréquence. Mais la plupart des formes d'onde qu'on croise en acoustique et en électronique sont différentes, chacune avec son propre contenu en harmoniques :
+
+<GalerieFormesOnde />
+
+Un son réel (une voix, un instrument, de la musique) n'est presque jamais aussi régulier qu'un carré ou un triangle : c'est une somme complexe de nombreuses fréquences, dont la forme temporelle semble irrégulière à l'œil — et c'est justement l'analyse spectrale qui permet de la décomposer proprement.
+
+## À retenir
+
+- La représentation temporelle trace l'**amplitude en fonction du temps** — c'est ce qu'on voit sur un oscilloscope ou dans un DAW.
+- On y lit directement l'**amplitude (A)** et la **période (T)**, dont découle la fréquence (f = 1/T).
+- Elle montre bien l'évolution de l'intensité, mais pas la composition fréquentielle du signal.
+- Sinusoïdale, carrée, triangulaire, dent de scie… chaque forme d'onde a une signature harmonique différente ; un signal réel est une somme complexe de tout cela.
+
+<LiensApplications items={[
+  {
+    titre: "Oscilloscope",
+    href: "/applications/oscilloscope",
+    texte: "observe en direct la forme temporelle d'un son capté par ton micro.",
+  },
+  {
+    titre: "Générateur",
+    href: "/applications/generateur",
+    texte: "écoute différentes formes d'onde et compare leur timbre.",
+  },
+]} />

@@ -1,0 +1,80 @@
+---
+// Galerie de formes d'onde classiques, chacune dessinée en SVG (même style
+// graphique que le reste du site). Utilisable dans une leçon .mdx :
+// <GalerieFormesOnde />
+---
+<div class="galerie-formes">
+  <figure class="forme">
+    <svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Onde sinusoïdale">
+      <line x1="6" y1="35" x2="114" y2="35" class="zero" />
+      <path d="M 6 35 Q 21 10 36 35 Q 51 60 66 35 Q 81 10 96 35 Q 111 60 114 35" class="trait" fill="none" />
+    </svg>
+    <figcaption>Sinusoïdale<span>un seul ton pur</span></figcaption>
+  </figure>
+
+  <figure class="forme">
+    <svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Onde carrée">
+      <line x1="6" y1="35" x2="114" y2="35" class="zero" />
+      <path d="M 6 12 H 36 V 58 H 66 V 12 H 96 V 58 H 114" class="trait" fill="none" />
+    </svg>
+    <figcaption>Carrée<span>riche en harmoniques impairs</span></figcaption>
+  </figure>
+
+  <figure class="forme">
+    <svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Onde triangulaire">
+      <line x1="6" y1="35" x2="114" y2="35" class="zero" />
+      <path d="M 6 35 L 21 12 L 51 58 L 81 12 L 111 58 L 114 55" class="trait" fill="none" />
+    </svg>
+    <figcaption>Triangulaire<span>harmoniques impairs plus faibles</span></figcaption>
+  </figure>
+
+  <figure class="forme">
+    <svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Onde en dent de scie">
+      <line x1="6" y1="35" x2="114" y2="35" class="zero" />
+      <path d="M 6 58 L 33 12 L 33.5 58 L 60.5 12 L 61 58 L 88 12 L 88.5 58 L 114 14" class="trait" fill="none" />
+    </svg>
+    <figcaption>Dent de scie<span>toutes les harmoniques</span></figcaption>
+  </figure>
+
+  <figure class="forme">
+    <svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Signal réel complexe (voix ou musique)">
+      <line x1="6" y1="35" x2="114" y2="35" class="zero" />
+      <path d="M 6 35 L 11 20 L 16 42 L 22 15 L 28 48 L 34 30 L 40 38 L 46 12 L 52 44 L 58 33 L 64 50 L 70 20 L 76 40 L 82 28 L 88 46 L 94 18 L 100 36 L 106 24 L 112 41 L 114 35" class="trait" fill="none" />
+    </svg>
+    <figcaption>Signal réel<span>voix, musique… somme de tout ça</span></figcaption>
+  </figure>
+</div>
+
+<style>
+  .galerie-formes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: .9rem;
+    margin: 1rem 0 1.6rem;
+  }
+  .forme {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--bg) 92%, white 8%);
+  }
+  .forme svg { display: block; width: 100%; height: auto; }
+  .zero { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; opacity: .5; }
+  .trait { stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; }
+  .forme figcaption {
+    padding: .5rem .7rem .65rem;
+    border-top: 1px solid var(--line);
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--fg);
+    text-align: center;
+  }
+  .forme figcaption span {
+    display: block;
+    margin-top: .15rem;
+    font-size: .68rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+</style>

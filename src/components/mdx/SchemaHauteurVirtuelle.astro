@@ -1,0 +1,79 @@
+---
+// Fondamentale manquante / hauteur virtuelle (résidu) : un spectre ne contenant
+// que les harmoniques 2, 3, 4 et 5 d'un fondamental f0 absent donne malgré tout
+// la sensation d'un son de hauteur f0 — l'oreille "reconstruit" l'écart commun.
+// Utilisable dans une leçon .mdx :
+// <SchemaHauteurVirtuelle legende="..." />
+interface Props {
+  legende?: string;
+  f0?: number; // fréquence fondamentale (manquante), par défaut 200 Hz
+}
+const { legende, f0 = 200 } = Astro.props as Props;
+
+const harmoniques = [2, 3, 4, 5]; // la fondamentale (rang 1) est absente
+const FMAX = f0 * 6;
+
+const X0 = 40, X1 = 310, Y0 = 150, YTOP = 20;
+const xDe = (f: number) => X0 + (f / FMAX) * (X1 - X0);
+// amplitude décroissante avec le rang, juste pour l'allure visuelle
+const ampDe = (rang: number) => (Y0 - YTOP) * (1 / Math.sqrt(rang)) * 0.85;
+---
+<figure class="schema-hauteur-virtuelle">
+  <svg viewBox="0 0 330 185" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={legende ?? "Spectre à fondamentale manquante et hauteur virtuelle perçue"}>
+    <line x1={X0} y1={Y0} x2={X1} y2={Y0} class="axe" />
+    <text x={(X0 + X1) / 2} y="178" class="etiquette-axe etiquette-centre">fréquence</text>
+
+    <!-- position fantôme de f0, en pointillés -->
+    <line x1={xDe(f0)} y1={Y0} x2={xDe(f0)} y2={Y0 - ampDe(1)} class="raie-absente" />
+    <text x={xDe(f0)} y={Y0 + 14} class="etiquette-f0 etiquette-centre">f0</text>
+    <text x={xDe(f0)} y={Y0 - ampDe(1) - 6} class="etiquette-absente etiquette-centre">absente</text>
+
+    <!-- harmoniques réellement présentes -->
+    {harmoniques.map((n) => (
+      <>
+        <line x1={xDe(f0 * n)} y1={Y0} x2={xDe(f0 * n)} y2={Y0 - ampDe(n)} class="raie" />
+        <text x={xDe(f0 * n)} y={Y0 + 14} class="etiquette-rang etiquette-centre">{n}f0</text>
+      </>
+    ))}
+
+    <!-- accolade indiquant l'écart commun entre harmoniques = f0 -->
+    <line x1={xDe(f0 * 2)} y1={Y0 + 26} x2={xDe(f0 * 3)} y2={Y0 + 26} class="cote" marker-start="url(#pv)" marker-end="url(#pv)" />
+    <text x={(xDe(f0 * 2) + xDe(f0 * 3)) / 2} y={Y0 + 40} class="etiquette-ecart etiquette-centre">écart constant = f0</text>
+
+    <defs>
+      <marker id="pv" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" class="pointe" />
+      </marker>
+    </defs>
+  </svg>
+  {legende && <figcaption>{legende}</figcaption>}
+</figure>
+
+<style>
+  .schema-hauteur-virtuelle {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--bg) 92%, white 8%);
+  }
+  .schema-hauteur-virtuelle svg { display: block; width: 100%; height: auto; }
+  .schema-hauteur-virtuelle figcaption {
+    padding: .6rem .9rem;
+    border-top: 1px solid var(--line);
+    font-size: .82rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  .axe { stroke: var(--fg); stroke-width: 1.2; }
+  .raie { stroke: var(--accent); stroke-width: 4; stroke-linecap: round; }
+  .raie-absente { stroke: var(--muted); stroke-width: 3; stroke-dasharray: 3 3; stroke-linecap: round; opacity: .7; }
+  .cote { stroke: var(--muted); stroke-width: 1; }
+  .pointe { fill: var(--muted); }
+  .etiquette-axe { fill: var(--fg); font-size: 10px; }
+  .etiquette-f0 { fill: var(--muted); font-size: 10px; }
+  .etiquette-absente { fill: var(--muted); font-size: 8px; font-style: italic; }
+  .etiquette-rang { fill: var(--fg); font-size: 10px; }
+  .etiquette-ecart { fill: var(--muted); font-size: 9px; }
+  .etiquette-centre { text-anchor: middle; }
+</style>
